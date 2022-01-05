@@ -64,6 +64,7 @@
             clang
             llvmPackages.libclang
             protobuf
+            openssl
             # Needed to build WASM modules (provides `wasm-opt`)
             binaryen
             # Needed at runtime
