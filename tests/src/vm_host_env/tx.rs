@@ -8,6 +8,7 @@ use anoma::ledger::storage::write_log::WriteLog;
 use anoma::types::address::Address;
 use anoma::types::storage::Key;
 use anoma::types::{key, token};
+use anoma::types::key::ed25519::SigScheme;
 use anoma::vm::prefix_iter::PrefixIterators;
 use anoma::vm::wasm::{self, TxCache, VpCache};
 use anoma::vm::{self, WasmCacheRwAccess};
@@ -99,7 +100,7 @@ impl TestTxEnv {
         address: &Address,
         public_key: &key::ed25519::PublicKey,
     ) {
-        let storage_key = key::ed25519::pk_key(address);
+        let storage_key = key::ed25519::Ed25519Scheme::pk_key(address);
         self.storage
             .write(&storage_key, public_key.try_to_vec().unwrap())
             .unwrap();

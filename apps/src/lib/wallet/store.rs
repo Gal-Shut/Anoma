@@ -6,7 +6,8 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use anoma::types::address::{Address, ImplicitAddress};
-use anoma::types::key::ed25519::{Keypair, PublicKey, PublicKeyHash};
+use anoma::types::key::ed25519::{Keypair, PublicKey,
+                                 PublicKeyHash, Ed25519Scheme, SigScheme};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -221,7 +222,7 @@ impl Store {
     fn generate_keypair() -> Keypair {
         use rand::rngs::OsRng;
         let mut csprng = OsRng {};
-        Keypair::generate(&mut csprng)
+        Ed25519Scheme::generate(&mut csprng)
     }
 
     /// Generate a new keypair and insert it into the store with the provided

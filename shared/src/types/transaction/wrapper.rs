@@ -322,14 +322,14 @@ pub mod wrapper_tx {
     mod test_wrapper_tx {
         use super::*;
         use crate::types::address::xan;
-        use crate::types::key::ed25519::{verify_tx_sig, SignedTxData};
+        use crate::types::key::ed25519::{Ed25519Scheme, SigScheme, SignedTxData};
 
         fn gen_keypair() -> Keypair {
             use rand::prelude::ThreadRng;
             use rand::thread_rng;
 
             let mut rng: ThreadRng = thread_rng();
-            Keypair::generate(&mut rng)
+            Ed25519Scheme::generate(&mut rng)
         }
 
         /// We test that when we feed in a Tx and then decrypt it again
@@ -452,7 +452,7 @@ pub mod wrapper_tx {
             tx.data = Some(signed_tx_data.try_to_vec().expect("Test failed"));
 
             // check that the signature is not valid
-            verify_tx_sig(&keypair.public, &tx, &signed_tx_data.sig)
+            Ed25519Scheme::verify_tx_sig(&keypair.public, &tx, &signed_tx_data.sig)
                 .expect_err("Test failed");
             // check that the try from method also fails
             let err = crate::types::transaction::process_tx(tx)

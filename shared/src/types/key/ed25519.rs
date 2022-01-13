@@ -59,32 +59,148 @@ pub struct Signature(ed25519_dalek::Signature);
 #[serde(transparent)]
 pub struct PublicKeyHash(pub(crate) String);
 
-const PKH_HASH_LEN: usize = address::HASH_LEN;
-const PK_STORAGE_KEY: &str = "ed25519_pk";
+/// Represents a digital signature scheme. More precisely this trait captures
+/// the concepts of public keys, private keys, and signatures as well as
+/// the algorithms over these concepts to generate keys, sign messages, and
+/// verify signatures.
 
-/// Obtain a storage key for user's public key.
-pub fn pk_key(owner: &Address) -> Key {
-    Key::from(owner.to_db_key())
-        .push(&PK_STORAGE_KEY.to_owned())
-        .expect("Cannot obtain a storage key")
+pub trait SigScheme {
+    /// Represents the signature for this scheme
+    type Signature : Hash + PartialOrd + AsRef<[u8]>;
+    /// Represents the public key for this scheme
+    type PublicKey : BorshSerialize + BorshDeserialize + Ord + Display +
+        FromStr + PartialOrd + Hash;
+    /// Represents the secret key for this scheme
+    type SecretKey : BorshSerialize + BorshDeserialize + Display + FromStr;
+    /// Represents the keypair for this scheme
+    type Keypair : Display + FromStr;
+    /// Obtain a storage key for user's public key.
+    fn pk_key(owner: &Address) -> Key;
+    /// Check if the given storage key is a public key. If it is, returns the owner.
+    fn is_pk_key(key: &Key) -> Option<&Address>;
+    /// Generate an ed25519 keypair.
+    /// Wrapper for [`ed25519_dalek::Keypair::generate`].
+    #[cfg(feature = "rand")]
+    fn generate<R>(csprng: &mut R) -> Keypair
+    where R: CryptoRng + RngCore;
+    /// Sign the data with a key.
+    fn sign(keypair: &Keypair, data: impl AsRef<[u8]>) -> Self::Signature;
+    /// Check that the public key matches the signature on the given data.
+    fn verify_signature<T: BorshSerialize + BorshDeserialize>(
+        pk: &Self::PublicKey,
+        data: &T,
+        sig: &Self::Signature,
+    ) -> Result<(), VerifySigError>;
+    /// Check that the public key matches the signature on the given raw data.
+    fn verify_signature_raw(
+        pk: &Self::PublicKey,
+        data: &[u8],
+        sig: &Self::Signature,
+    ) -> Result<(), VerifySigError>;
+    /// Sign a transaction using [`SignedTxData`].
+    fn sign_tx(keypair: &Keypair, tx: Tx) -> Tx;
+    /// Verify that the transaction has been signed by the secret key
+    /// counterpart of the given public key.
+    fn verify_tx_sig(
+        pk: &Self::PublicKey,
+        tx: &Tx,
+        sig: &Self::Signature,
+    ) -> Result<(), VerifySigError>;
 }
 
-/// Check if the given storage key is a public key. If it is, returns the owner.
-pub fn is_pk_key(key: &Key) -> Option<&Address> {
-    match &key.segments[..] {
-        [DbKeySeg::AddressSeg(owner), DbKeySeg::StringSeg(key)]
-            if key == PK_STORAGE_KEY =>
-        {
-            Some(owner)
+/// An implementation of the Ed25519 signature scheme
+
+pub struct Ed25519Scheme;
+
+impl SigScheme for Ed25519Scheme {
+    type Signature = Signature;
+    type PublicKey = PublicKey;
+    type SecretKey = SecretKey;
+    type Keypair = Keypair;
+
+    fn pk_key(owner: &Address) -> Key {
+        Key::from(owner.to_db_key())
+            .push(&PK_STORAGE_KEY.to_owned())
+            .expect("Cannot obtain a storage key")
+    }
+
+    fn is_pk_key(key: &Key) -> Option<&Address> {
+        match &key.segments[..] {
+            [DbKeySeg::AddressSeg(owner), DbKeySeg::StringSeg(key)]
+                if key == PK_STORAGE_KEY =>
+            {
+                Some(owner)
+            }
+            _ => None,
         }
-        _ => None,
+    }
+
+    #[cfg(feature = "rand")]
+    fn generate<R>(csprng: &mut R) -> Keypair
+    where
+        R: CryptoRng + RngCore,
+    {
+        ed25519_dalek::Keypair::generate(csprng).into()
+    }
+
+    fn sign(keypair: &Keypair, data: impl AsRef<[u8]>) -> Self::Signature {
+        keypair.sign(data.as_ref())
+    }
+
+    fn verify_signature<T: BorshSerialize>(
+        pk: &Self::PublicKey,
+        data: &T,
+        sig: &Self::Signature,
+    ) -> Result<(), VerifySigError> {
+        let bytes = data.try_to_vec().map_err(VerifySigError::EncodingError)?;
+        pk.0.verify_strict(&bytes, &sig.0)
+            .map_err(VerifySigError::SigError)
+    }
+
+    fn verify_signature_raw(
+        pk: &Self::PublicKey,
+        data: &[u8],
+        sig: &Self::Signature,
+    ) -> Result<(), VerifySigError> {
+        pk.0.verify_strict(data, &sig.0)
+            .map_err(VerifySigError::SigError)
+    }
+
+    fn sign_tx(keypair: &Keypair, tx: Tx) -> Tx {
+        let to_sign = tx.to_bytes();
+        let sig = Self::sign(keypair, &to_sign);
+        let signed = SignedTxData { data: tx.data, sig }
+            .try_to_vec()
+            .expect("Encoding transaction data shouldn't fail");
+        Tx {
+            code: tx.code,
+            data: Some(signed),
+            timestamp: tx.timestamp,
+        }
+    }
+
+    fn verify_tx_sig(
+        pk: &Self::PublicKey,
+        tx: &Tx,
+        sig: &Self::Signature,
+    ) -> Result<(), VerifySigError> {
+        // Try to get the transaction data from decoded `SignedTxData`
+        let tx_data = tx.data.clone().ok_or(VerifySigError::MissingData)?;
+        let signed_tx_data = SignedTxData::try_from_slice(&tx_data[..])
+            .expect("Decoding transaction data shouldn't fail");
+        let data = signed_tx_data.data;
+        let tx = Tx {
+            code: tx.code.clone(),
+            data,
+            timestamp: tx.timestamp,
+        };
+        let signed_data = tx.to_bytes();
+       Self:: verify_signature_raw(pk, &signed_data, sig)
     }
 }
 
-/// Sign the data with a key.
-pub fn sign(keypair: &Keypair, data: impl AsRef<[u8]>) -> Signature {
-    keypair.sign(data.as_ref())
-}
+const PKH_HASH_LEN: usize = address::HASH_LEN;
+const PK_STORAGE_KEY: &str = "ed25519_pk";
 
 #[allow(missing_docs)]
 #[derive(Error, Debug)]
@@ -95,27 +211,6 @@ pub enum VerifySigError {
     EncodingError(std::io::Error),
     #[error("Transaction doesn't have any data with a signature.")]
     MissingData,
-}
-
-/// Check that the public key matches the signature on the given data.
-pub fn verify_signature<T: BorshSerialize + BorshDeserialize>(
-    pk: &PublicKey,
-    data: &T,
-    sig: &Signature,
-) -> Result<(), VerifySigError> {
-    let bytes = data.try_to_vec().map_err(VerifySigError::EncodingError)?;
-    pk.0.verify_strict(&bytes, &sig.0)
-        .map_err(VerifySigError::SigError)
-}
-
-/// Check that the public key matches the signature on the given raw data.
-pub fn verify_signature_raw(
-    pk: &PublicKey,
-    data: &[u8],
-    sig: &Signature,
-) -> Result<(), VerifySigError> {
-    pk.0.verify_strict(data, &sig.0)
-        .map_err(VerifySigError::SigError)
 }
 
 /// This can be used to sign an arbitrary tx. The signature is produced and
@@ -132,41 +227,6 @@ pub struct SignedTxData {
     /// The signature is produced on the tx data concatenated with the tx code
     /// and the timestamp.
     pub sig: Signature,
-}
-
-/// Sign a transaction using [`SignedTxData`].
-pub fn sign_tx(keypair: &Keypair, tx: Tx) -> Tx {
-    let to_sign = tx.to_bytes();
-    let sig = sign(keypair, &to_sign);
-    let signed = SignedTxData { data: tx.data, sig }
-        .try_to_vec()
-        .expect("Encoding transaction data shouldn't fail");
-    Tx {
-        code: tx.code,
-        data: Some(signed),
-        timestamp: tx.timestamp,
-    }
-}
-
-/// Verify that the transaction has been signed by the secret key
-/// counterpart of the given public key.
-pub fn verify_tx_sig(
-    pk: &PublicKey,
-    tx: &Tx,
-    sig: &Signature,
-) -> Result<(), VerifySigError> {
-    // Try to get the transaction data from decoded `SignedTxData`
-    let tx_data = tx.data.clone().ok_or(VerifySigError::MissingData)?;
-    let signed_tx_data = SignedTxData::try_from_slice(&tx_data[..])
-        .expect("Decoding transaction data shouldn't fail");
-    let data = signed_tx_data.data;
-    let tx = Tx {
-        code: tx.code.clone(),
-        data,
-        timestamp: tx.timestamp,
-    };
-    let signed_data = tx.to_bytes();
-    verify_signature_raw(pk, &signed_data, sig)
 }
 
 /// A generic signed data wrapper for Borsh encode-able data.
@@ -191,16 +251,6 @@ impl Keypair {
         bytes[ed25519_dalek::SECRET_KEY_LENGTH..]
             .copy_from_slice(self.public.0.as_bytes());
         bytes
-    }
-
-    /// Generate an ed25519 keypair.
-    /// Wrapper for [`ed25519_dalek::Keypair::generate`].
-    #[cfg(feature = "rand")]
-    pub fn generate<R>(csprng: &mut R) -> Keypair
-    where
-        R: CryptoRng + RngCore,
-    {
-        ed25519_dalek::Keypair::generate(csprng).into()
     }
 
     /// Construct a `Keypair` from the bytes of a `PublicKey` and `SecretKey`.
@@ -261,7 +311,7 @@ where
         let to_sign = data
             .try_to_vec()
             .expect("Encoding data for signing shouldn't fail");
-        let sig = sign(keypair, &to_sign);
+        let sig = Ed25519Scheme::sign(keypair, &to_sign);
         Self { data, sig }
     }
 
@@ -272,7 +322,7 @@ where
             .data
             .try_to_vec()
             .expect("Encoding data for verifying signature shouldn't fail");
-        verify_signature_raw(pk, &bytes, &self.sig)
+        Ed25519Scheme::verify_signature_raw(pk, &bytes, &self.sig)
     }
 }
 
@@ -688,7 +738,7 @@ fn gen_keypair() {
     use rand::thread_rng;
 
     let mut rng: ThreadRng = thread_rng();
-    let keypair = Keypair::generate(&mut rng);
+    let keypair = Ed25519Scheme::generate(&mut rng);
     println!("keypair {:?}", keypair.to_bytes());
 }
 
@@ -738,7 +788,7 @@ pub mod testing {
     /// Generate a new random [`Keypair`].
     pub fn gen_keypair() -> Keypair {
         let mut rng: ThreadRng = thread_rng();
-        Keypair::generate(&mut rng)
+        Ed25519Scheme::generate(&mut rng)
     }
 }
 

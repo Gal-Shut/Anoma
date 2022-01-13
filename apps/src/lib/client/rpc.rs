@@ -12,6 +12,7 @@ use anoma::ledger::pos::{
 };
 use anoma::types::address::Address;
 use anoma::types::key::ed25519;
+use anoma::types::key::ed25519::SigScheme;
 use anoma::types::storage::Epoch;
 use anoma::types::{address, storage, token};
 use borsh::BorshDeserialize;
@@ -702,7 +703,7 @@ pub async fn get_public_key(
     ledger_address: TendermintAddress,
 ) -> Option<ed25519::PublicKey> {
     let client = HttpClient::new(ledger_address).unwrap();
-    let key = ed25519::pk_key(address);
+    let key = ed25519::Ed25519Scheme::pk_key(address);
     query_storage_value(client, key).await
 }
 

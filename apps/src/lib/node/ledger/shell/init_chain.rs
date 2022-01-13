@@ -1,6 +1,7 @@
 //! Implementation of chain initialization for the Shell
 use std::collections::HashMap;
 use std::hash::Hash;
+use anoma::types::key::ed25519::SigScheme;
 
 #[cfg(not(feature = "dev"))]
 use sha2::{Digest, Sha256};
@@ -119,7 +120,7 @@ where
                 .unwrap();
 
             if let Some(pk) = public_key {
-                let pk_storage_key = key::ed25519::pk_key(&address);
+                let pk_storage_key = key::ed25519::Ed25519Scheme::pk_key(&address);
                 self.storage
                     .write(&pk_storage_key, pk.try_to_vec().unwrap())
                     .unwrap();
@@ -134,7 +135,7 @@ where
         for genesis::ImplicitAccount { public_key } in genesis.implicit_accounts
         {
             let address: address::Address = (&public_key).into();
-            let pk_storage_key = key::ed25519::pk_key(&address);
+            let pk_storage_key = key::ed25519::Ed25519Scheme::pk_key(&address);
             self.storage
                 .write(&pk_storage_key, public_key.try_to_vec().unwrap())
                 .unwrap();
@@ -218,7 +219,7 @@ where
                 .write(&Key::validity_predicate(addr), vp_code)
                 .expect("Unable to write user VP");
             // Validator account key
-            let pk_key = key::ed25519::pk_key(addr);
+            let pk_key = key::ed25519::Ed25519Scheme::pk_key(addr);
             self.storage
                 .write(
                     &pk_key,

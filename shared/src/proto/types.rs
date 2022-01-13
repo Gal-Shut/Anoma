@@ -7,7 +7,7 @@ use prost::Message;
 use thiserror::Error;
 
 use super::generated::types;
-use crate::types::key::ed25519::{self, Keypair};
+use crate::types::key::ed25519::{self, Keypair, SigScheme};
 use crate::types::time::DateTimeUtc;
 
 #[derive(Error, Debug)]
@@ -83,7 +83,7 @@ impl Tx {
     }
 
     pub fn sign(self, keypair: &Keypair) -> Tx {
-        ed25519::sign_tx(keypair, self)
+        ed25519::Ed25519Scheme::sign_tx(keypair, self)
     }
 }
 

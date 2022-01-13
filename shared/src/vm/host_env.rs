@@ -20,7 +20,7 @@ use crate::proto::Tx;
 use crate::types::address::{self, Address};
 use crate::types::ibc::IbcEvent;
 use crate::types::internal::HostEnvResult;
-use crate::types::key::ed25519::{verify_tx_sig, PublicKey, Signature};
+use crate::types::key::ed25519::{Ed25519Scheme, SigScheme, PublicKey, Signature};
 use crate::types::storage::Key;
 use crate::vm::memory::VmMemory;
 use crate::vm::prefix_iter::{PrefixIteratorId, PrefixIterators};
@@ -1485,7 +1485,7 @@ where
 
     vp_env::add_gas(gas_meter, VERIFY_TX_SIG_GAS_COST)?;
     let tx = unsafe { env.ctx.tx.get() };
-    Ok(HostEnvResult::from(verify_tx_sig(&pk, tx, &sig).is_ok()).to_i64())
+    Ok(HostEnvResult::from(Ed25519Scheme::verify_tx_sig(&pk, tx, &sig).is_ok()).to_i64())
 }
 
 /// Log a string from exposed to the wasm VM Tx environment. The message will be

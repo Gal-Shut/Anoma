@@ -15,6 +15,7 @@ use crate::ledger::storage::{self, Storage, StorageHasher};
 use crate::types::address::Address;
 use crate::types::storage::{DbKeySeg, Key, KeySeg};
 use crate::types::{key, token};
+use crate::types::key::ed25519::SigScheme;
 
 const PARAMS_STORAGE_KEY: &str = "params";
 const VALIDATOR_STORAGE_PREFIX: &str = "validator";
@@ -530,7 +531,7 @@ where
         //     .unwrap();
 
         // Write the public key
-        let pk_key = key::ed25519::pk_key(address);
+        let pk_key = key::ed25519::Ed25519Scheme::pk_key(address);
         self.write(&pk_key, encode(pk)).unwrap();
     }
 

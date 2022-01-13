@@ -715,7 +715,7 @@ pub fn genesis() -> Genesis {
 #[cfg(test)]
 pub mod tests {
     use anoma::types::address::testing::gen_established_address;
-    use anoma::types::key::ed25519::Keypair;
+    use anoma::types::key::ed25519::{Ed25519Scheme, SigScheme};
     use rand::prelude::ThreadRng;
     use rand::thread_rng;
 
@@ -726,8 +726,8 @@ pub mod tests {
         let address = gen_established_address();
         let staking_reward_address = gen_established_address();
         let mut rng: ThreadRng = thread_rng();
-        let keypair = Keypair::generate(&mut rng);
-        let staking_reward_keypair = Keypair::generate(&mut rng);
+        let keypair = Ed25519Scheme::generate(&mut rng);
+        let staking_reward_keypair = Ed25519Scheme::generate(&mut rng);
         println!("address: {}", address);
         println!("staking_reward_address: {}", staking_reward_address);
         println!("keypair: {:?}", keypair.to_bytes());

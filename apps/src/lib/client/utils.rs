@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use anoma::types::chain::ChainId;
-use anoma::types::key::ed25519::Keypair;
+use anoma::types::key::ed25519::{Ed25519Scheme, SigScheme};
 use anoma::types::{address, token};
 use borsh::BorshSerialize;
 use flate2::read::GzDecoder;
@@ -134,7 +134,7 @@ pub fn init_network(
         let validator_dir = accounts_dir.join(name);
 
         // Generate a node key
-        let node_keypair = Keypair::generate(&mut rng);
+        let node_keypair = Ed25519Scheme::generate(&mut rng);
         let node_pk: ed25519_dalek::PublicKey =
             node_keypair.public.clone().into();
 

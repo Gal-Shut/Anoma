@@ -24,7 +24,7 @@ mod tests {
     use anoma::ledger::ibc::init_genesis_storage;
     use anoma::ledger::ibc::vp::Error as IbcError;
     use anoma::proto::Tx;
-    use anoma::types::key::ed25519::SignedTxData;
+    use anoma::types::key::ed25519::{SignedTxData, SigScheme};
     use anoma::types::storage::{self, Key, KeySeg};
     use anoma::types::time::DateTimeUtc;
     use anoma::types::{address, key};
@@ -394,7 +394,7 @@ mod tests {
         let addr = address::testing::established_address_1();
 
         // Write the public key to storage
-        let pk_key = key::ed25519::pk_key(&addr);
+        let pk_key = key::ed25519::Ed25519Scheme::pk_key(&addr);
         let keypair = key::ed25519::testing::keypair_1();
         let pk = keypair.public.clone();
         env.storage

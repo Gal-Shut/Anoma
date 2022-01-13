@@ -134,7 +134,7 @@ pub mod tx_types {
 
     use super::*;
     use crate::proto::Tx;
-    use crate::types::key::ed25519::{verify_tx_sig, SignedTxData};
+    use crate::types::key::ed25519::{Ed25519Scheme, SigScheme, SignedTxData};
 
     /// Struct that classifies that kind of Tx
     /// based on the contents of its data.
@@ -210,7 +210,7 @@ pub mod tx_types {
             {
                 // verify signature and extract signed data
                 TxType::Wrapper(wrapper) => {
-                    verify_tx_sig(&wrapper.pk, &tx, sig)
+                    Ed25519Scheme::verify_tx_sig(&wrapper.pk, &tx, sig)
                         .map_err(WrapperTxErr::SigError)?;
                     Ok(TxType::Wrapper(wrapper))
                 }
@@ -235,15 +235,15 @@ pub mod tx_types {
     mod test_process_tx {
         use super::*;
         use crate::types::address::xan;
-        use crate::types::key::ed25519::Keypair;
+        use crate::types::key::ed25519::{Ed25519Scheme, SigScheme};
         use crate::types::storage::Epoch;
 
-        fn gen_keypair() -> Keypair {
+        fn gen_keypair() -> <Ed25519Scheme as SigScheme>::Keypair {
             use rand::prelude::ThreadRng;
             use rand::thread_rng;
 
             let mut rng: ThreadRng = thread_rng();
-            Keypair::generate(&mut rng)
+            Ed25519Scheme::generate(&mut rng)
         }
 
         /// Test that process_tx correctly identifies a raw tx with no

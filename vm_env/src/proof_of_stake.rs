@@ -15,6 +15,7 @@ use anoma::ledger::pos::{
 use anoma::types::address::{self, Address, InternalAddress};
 use anoma::types::transaction::InitValidator;
 use anoma::types::{key, token};
+use anoma::types::key::ed25519::SigScheme;
 pub use anoma_proof_of_stake::{
     epoched, parameters, types, PosActions as PosWrite, PosReadOnly as PosRead,
 };
@@ -70,12 +71,12 @@ pub fn init_validator(
     let current_epoch = tx::get_block_epoch();
     // Init validator account
     let validator_address = tx::init_account(&validator_vp_code);
-    let pk_key = key::ed25519::pk_key(&validator_address);
+    let pk_key = key::ed25519::Ed25519Scheme::pk_key(&validator_address);
     tx::write(&pk_key.to_string(), &account_key);
 
     // Init staking reward account
     let rewards_address = tx::init_account(&rewards_vp_code);
-    let pk_key = key::ed25519::pk_key(&rewards_address);
+    let pk_key = key::ed25519::Ed25519Scheme::pk_key(&rewards_address);
     tx::write(&pk_key.to_string(), &rewards_account_key);
 
     PoS.become_validator(
