@@ -83,7 +83,7 @@ pub trait TryFromRef<T> : Sized where T: ?Sized {
 
 pub trait SigScheme {
     /// Represents the signature for this scheme
-    type Signature : Hash + PartialOrd + AsRef<[u8]>;
+    type Signature : Hash + PartialOrd + AsRef<[u8]> + ed25519_dalek::ed25519::signature::Signature;
     /// Represents the public key for this scheme
     type PublicKey : BorshSerialize + BorshDeserialize + Ord + Display +
         FromStr + PartialOrd + Hash;
@@ -91,6 +91,8 @@ pub trait SigScheme {
     type SecretKey : BorshSerialize + BorshDeserialize + Display + FromStr;
     /// Represents the keypair for this scheme
     type Keypair : Display + FromStr + IntoRef<[u8]> + TryFromRef<[u8]>;
+    /// Represents an error in signature verification
+    type VerifyError;
     /// The length of Keypairs in bytes
     const KEYPAIR_LENGTH: usize;
     /// Obtain a storage key for user's public key.
@@ -103,19 +105,19 @@ pub trait SigScheme {
     fn generate<R>(csprng: &mut R) -> Keypair
     where R: CryptoRng + RngCore;
     /// Sign the data with a key.
-    fn sign(keypair: &Keypair, data: impl AsRef<[u8]>) -> Self::Signature;
+    fn sign(keypair: &Self::Keypair, data: impl AsRef<[u8]>) -> Self::Signature;
     /// Check that the public key matches the signature on the given data.
     fn verify_signature<T: BorshSerialize + BorshDeserialize>(
         pk: &Self::PublicKey,
         data: &T,
         sig: &Self::Signature,
-    ) -> Result<(), VerifySigError>;
+    ) -> Result<(), Self::VerifyError>;
     /// Check that the public key matches the signature on the given raw data.
     fn verify_signature_raw(
         pk: &Self::PublicKey,
         data: &[u8],
         sig: &Self::Signature,
-    ) -> Result<(), VerifySigError>;
+    ) -> Result<(), Self::VerifyError>;
     /// Sign a transaction using [`SignedTxData`].
     fn sign_tx(keypair: &Keypair, tx: Tx) -> Tx;
     /// Verify that the transaction has been signed by the secret key
@@ -124,11 +126,11 @@ pub trait SigScheme {
         pk: &Self::PublicKey,
         tx: &Tx,
         sig: &Self::Signature,
-    ) -> Result<(), VerifySigError>;
+    ) -> Result<(), Self::VerifyError>;
 }
 
 /// An implementation of the Ed25519 signature scheme
-
+#[derive(Debug, Clone)]
 pub struct Ed25519Scheme;
 
 impl SigScheme for Ed25519Scheme {
@@ -136,6 +138,7 @@ impl SigScheme for Ed25519Scheme {
     type PublicKey = PublicKey;
     type SecretKey = SecretKey;
     type Keypair = Keypair;
+    type VerifyError = VerifySigError;
 
     const KEYPAIR_LENGTH:usize = ed25519_dalek::KEYPAIR_LENGTH;
 
@@ -190,7 +193,7 @@ impl SigScheme for Ed25519Scheme {
     fn sign_tx(keypair: &Keypair, tx: Tx) -> Tx {
         let to_sign = tx.to_bytes();
         let sig = Self::sign(keypair, &to_sign);
-        let signed = SignedTxData { data: tx.data, sig }
+        let signed = SignedTxData::<Self> { data: tx.data, sig }
             .try_to_vec()
             .expect("Encoding transaction data shouldn't fail");
         Tx {
@@ -207,7 +210,7 @@ impl SigScheme for Ed25519Scheme {
     ) -> Result<(), VerifySigError> {
         // Try to get the transaction data from decoded `SignedTxData`
         let tx_data = tx.data.clone().ok_or(VerifySigError::MissingData)?;
-        let signed_tx_data = SignedTxData::try_from_slice(&tx_data[..])
+        let signed_tx_data = SignedTxData::<Self>::try_from_slice(&tx_data[..])
             .expect("Decoding transaction data shouldn't fail");
         let data = signed_tx_data.data;
         let tx = Tx {
@@ -242,23 +245,23 @@ pub enum VerifySigError {
 /// the `Tx` type directly. Instead, the signature is attached to the `tx.data`,
 /// which is can then be checked by a validity predicate wasm.
 #[derive(Clone, Debug, BorshSerialize, BorshDeserialize)]
-pub struct SignedTxData {
+pub struct SignedTxData<S: SigScheme> {
     /// The original tx data bytes, if any
     pub data: Option<Vec<u8>>,
     /// The signature is produced on the tx data concatenated with the tx code
     /// and the timestamp.
-    pub sig: Signature,
+    pub sig: S::Signature,
 }
 
 /// A generic signed data wrapper for Borsh encode-able data.
 #[derive(
     Clone, Debug, BorshSerialize, BorshDeserialize, Serialize, Deserialize,
 )]
-pub struct Signed<T: BorshSerialize + BorshDeserialize> {
+pub struct Signed<S: SigScheme, T: BorshSerialize + BorshDeserialize> {
     /// Arbitrary data to be signed
     pub data: T,
     /// The signature of the data
-    pub sig: Signature,
+    pub sig: S::Signature,
 }
 
 impl IntoRef<[u8]> for Keypair {
@@ -290,8 +293,9 @@ impl PublicKey {
     }
 }
 
-impl<T> PartialEq for Signed<T>
+impl<S, T> PartialEq for Signed<S, T>
 where
+    S: SigScheme,
     T: BorshSerialize + BorshDeserialize + PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -299,13 +303,15 @@ where
     }
 }
 
-impl<T> Eq for Signed<T> where
+impl<S, T> Eq for Signed<S, T> where
+    S: SigScheme,
     T: BorshSerialize + BorshDeserialize + Eq + PartialEq
 {
 }
 
-impl<T> Hash for Signed<T>
+impl<S, T> Hash for Signed<S, T>
 where
+    S: SigScheme,
     T: BorshSerialize + BorshDeserialize + Hash,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -314,8 +320,9 @@ where
     }
 }
 
-impl<T> PartialOrd for Signed<T>
+impl<S, T> PartialOrd for Signed<S, T>
 where
+    S: SigScheme,
     T: BorshSerialize + BorshDeserialize + PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -323,27 +330,28 @@ where
     }
 }
 
-impl<T> Signed<T>
+impl<S, T> Signed<S, T>
 where
+    S: SigScheme,
     T: BorshSerialize + BorshDeserialize,
 {
     /// Initialize a new signed data.
-    pub fn new(keypair: &Keypair, data: T) -> Self {
+    pub fn new(keypair: &S::Keypair, data: T) -> Self {
         let to_sign = data
             .try_to_vec()
             .expect("Encoding data for signing shouldn't fail");
-        let sig = Ed25519Scheme::sign(keypair, &to_sign);
+        let sig = S::sign(keypair, &to_sign);
         Self { data, sig }
     }
 
     /// Verify that the data has been signed by the secret key
     /// counterpart of the given public key.
-    pub fn verify(&self, pk: &PublicKey) -> Result<(), VerifySigError> {
+    pub fn verify(&self, pk: &S::PublicKey) -> Result<(), S::VerifyError> {
         let bytes = self
             .data
             .try_to_vec()
             .expect("Encoding data for verifying signature shouldn't fail");
-        Ed25519Scheme::verify_signature_raw(pk, &bytes, &self.sig)
+        S::verify_signature_raw(pk, &bytes, &self.sig)
     }
 }
 

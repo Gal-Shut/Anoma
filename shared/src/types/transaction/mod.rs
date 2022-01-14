@@ -199,7 +199,7 @@ pub mod tx_types {
         })) = tx
             .data
             .as_ref()
-            .map(|data| SignedTxData::try_from_slice(&data[..]))
+            .map(|data| SignedTxData::<Ed25519Scheme>::try_from_slice(&data[..]))
         {
             match TxType::try_from(Tx {
                 code: vec![],

@@ -1,14 +1,14 @@
 use std::collections::HashSet;
 
 use anoma::types::intent;
-use anoma::types::key::ed25519::{Signature, Signed};
+use anoma::types::key::ed25519::{Ed25519Scheme, Signature, Signed};
 
 /// Tx imports and functions.
 pub mod tx {
     pub use anoma::types::intent::*;
 
     use super::*;
-    pub fn invalidate_exchange(intent: &Signed<Exchange>) {
+    pub fn invalidate_exchange(intent: &Signed<Ed25519Scheme, Exchange>) {
         use crate::imports::tx;
         let key = intent::invalid_intent_key(&intent.data.addr);
         let mut invalid_intent: HashSet<Signature> =
@@ -24,7 +24,7 @@ pub mod vp {
 
     use super::*;
 
-    pub fn vp_exchange(intent: &Signed<Exchange>) -> bool {
+    pub fn vp_exchange(intent: &Signed<Ed25519Scheme, Exchange>) -> bool {
         use crate::imports::vp;
         let key = intent::invalid_intent_key(&intent.data.addr);
 
