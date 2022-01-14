@@ -11,7 +11,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::types::address::Address;
-use crate::types::key::ed25519::{Ed25519Scheme, Signed};
+use crate::types::key::ed25519::Ed25519Scheme;
+use crate::types::key::sigscheme::Signed;
 use crate::types::storage::{DbKeySeg, Key, KeySeg};
 use crate::types::token;
 

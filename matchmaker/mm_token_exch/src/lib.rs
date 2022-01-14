@@ -2,7 +2,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use anoma::types::address::Address;
 use anoma::types::intent::{Exchange, FungibleTokenIntent, MatchedExchanges};
-use anoma::types::key::ed25519::{Ed25519Scheme, Signed};
+use anoma::types::key::ed25519::Ed25519Scheme;
+use anoma::types::key::sigscheme::Signed;
 use anoma::types::matchmaker::{AddIntent, AddIntentResult};
 use anoma::types::token;
 use anoma_macros::Matchmaker;

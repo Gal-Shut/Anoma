@@ -134,7 +134,8 @@ pub mod tx_types {
 
     use super::*;
     use crate::proto::Tx;
-    use crate::types::key::ed25519::{Ed25519Scheme, SigScheme, SignedTxData};
+    use crate::types::key::ed25519::Ed25519Scheme;
+    use crate::types::key::sigscheme::{SigScheme, SignedTxData};
 
     /// Struct that classifies that kind of Tx
     /// based on the contents of its data.
@@ -235,7 +236,8 @@ pub mod tx_types {
     mod test_process_tx {
         use super::*;
         use crate::types::address::xan;
-        use crate::types::key::ed25519::{Ed25519Scheme, SigScheme};
+        use crate::types::key::ed25519::Ed25519Scheme;
+        use crate::types::key::sigscheme::SigScheme;
         use crate::types::storage::Epoch;
 
         fn gen_keypair() -> <Ed25519Scheme as SigScheme>::Keypair {
@@ -401,7 +403,7 @@ pub mod tx_types {
         );
         let decrypted = DecryptedTx::Decrypted(payload.clone());
         // Invalid signed data
-        let signed = SignedTxData {
+        let signed = SignedTxData::<Ed25519Scheme> {
             data: Some(
                 TxType::Decrypted(decrypted)
                     .try_to_vec()

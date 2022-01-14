@@ -67,7 +67,8 @@ pub fn addresses_from_genesis(genesis: GenesisConfig) -> Vec<(Alias, Address)> {
 mod dev {
     use anoma::ledger::pos;
     use anoma::types::address::{self, Address};
-    use anoma::types::key::ed25519::{Keypair, TryFromRef};
+    use anoma::types::key::ed25519::Keypair;
+    use anoma::types::key::sigscheme::TryFromRef;
 
     use crate::wallet::store::Alias;
 

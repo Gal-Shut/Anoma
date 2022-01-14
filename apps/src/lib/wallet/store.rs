@@ -7,7 +7,8 @@ use std::str::FromStr;
 
 use anoma::types::address::{Address, ImplicitAddress};
 use anoma::types::key::ed25519::{Keypair, PublicKey,
-                                 PublicKeyHash, Ed25519Scheme, SigScheme};
+                                 PublicKeyHash, Ed25519Scheme};
+use anoma::types::key::sigscheme::SigScheme;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

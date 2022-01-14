@@ -322,8 +322,9 @@ pub mod wrapper_tx {
     mod test_wrapper_tx {
         use super::*;
         use crate::types::address::xan;
-        use crate::types::key::ed25519::{Ed25519Scheme, SigScheme, SignedTxData};
-
+        use crate::types::key::ed25519::Ed25519Scheme;
+        use crate::types::key::sigscheme::{SigScheme, SignedTxData};
+        
         fn gen_keypair() -> Keypair {
             use rand::prelude::ThreadRng;
             use rand::thread_rng;
@@ -422,7 +423,7 @@ pub mod wrapper_tx {
             };
 
             let mut signed_tx_data =
-                SignedTxData::try_from_slice(&tx.data.unwrap()[..])
+                SignedTxData::<Ed25519Scheme>::try_from_slice(&tx.data.unwrap()[..])
                     .expect("Test failed");
 
             // malicious transaction

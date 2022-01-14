@@ -24,7 +24,8 @@ mod tests {
     use anoma::ledger::ibc::init_genesis_storage;
     use anoma::ledger::ibc::vp::Error as IbcError;
     use anoma::proto::Tx;
-    use anoma::types::key::ed25519::{SignedTxData, SigScheme};
+    use anoma::types::key::sigscheme::SignedTxData;
+    use anoma::types::key::sigscheme::SigScheme;
     use anoma::types::storage::{self, Key, KeySeg};
     use anoma::types::time::DateTimeUtc;
     use anoma::types::{address, key};
@@ -32,6 +33,7 @@ mod tests {
         BorshDeserialize, BorshSerialize, KeyValIterator,
     };
     use anoma_vm_env::vp_prelude::{PostKeyValIterator, PreKeyValIterator};
+    use anoma::types::key::ed25519::Ed25519Scheme;
     #[cfg(feature = "ABCI")]
     use ibc_abci::tx_msg::Msg;
     use itertools::Itertools;
@@ -415,7 +417,7 @@ mod tests {
 
             let tx_data = env.tx.data.expect("data should exist");
             let signed_tx_data =
-                match SignedTxData::try_from_slice(&tx_data[..]) {
+                match SignedTxData::<Ed25519Scheme>::try_from_slice(&tx_data[..]) {
                     Ok(data) => data,
                     _ => panic!("decoding failed"),
                 };

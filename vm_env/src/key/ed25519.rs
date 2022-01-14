@@ -4,6 +4,7 @@ use anoma::types::key::ed25519;
 /// Vp imports and functions.
 pub mod vp {
     pub use anoma::types::key::ed25519::*;
+    use anoma::types::key::sigscheme::SigScheme;
 
     use super::*;
     use crate::imports::vp;

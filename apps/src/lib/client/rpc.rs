@@ -12,7 +12,7 @@ use anoma::ledger::pos::{
 };
 use anoma::types::address::Address;
 use anoma::types::key::ed25519;
-use anoma::types::key::ed25519::SigScheme;
+use anoma::types::key::sigscheme::SigScheme;
 use anoma::types::storage::Epoch;
 use anoma::types::{address, storage, token};
 use borsh::BorshDeserialize;

@@ -3,7 +3,8 @@ use std::str::FromStr;
 
 use anoma::types::address::Address;
 use anoma::types::chain::ChainId;
-use anoma::types::key::ed25519::{Keypair, Ed25519Scheme, SigScheme, IntoRef};
+use anoma::types::key::ed25519::{Keypair, Ed25519Scheme};
+use anoma::types::key::sigscheme::{SigScheme, IntoRef};
 use anoma::types::time::DateTimeUtc;
 use serde_json::json;
 #[cfg(not(feature = "ABCI"))]

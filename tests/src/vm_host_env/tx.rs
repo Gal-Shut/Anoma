@@ -8,7 +8,7 @@ use anoma::ledger::storage::write_log::WriteLog;
 use anoma::types::address::Address;
 use anoma::types::storage::Key;
 use anoma::types::{key, token};
-use anoma::types::key::ed25519::SigScheme;
+use anoma::types::key::sigscheme::SigScheme;
 use anoma::vm::prefix_iter::PrefixIterators;
 use anoma::vm::wasm::{self, TxCache, VpCache};
 use anoma::vm::{self, WasmCacheRwAccess};

@@ -1,7 +1,7 @@
 //! Implementation of chain initialization for the Shell
 use std::collections::HashMap;
 use std::hash::Hash;
-use anoma::types::key::ed25519::SigScheme;
+use anoma::types::key::sigscheme::SigScheme;
 
 #[cfg(not(feature = "dev"))]
 use sha2::{Digest, Sha256};

@@ -570,7 +570,8 @@ mod test_utils {
     use anoma::ledger::storage::testing::Sha256Hasher;
     use anoma::ledger::storage::BlockStateWrite;
     use anoma::types::address::{xan, EstablishedAddressGen};
-    use anoma::types::key::ed25519::{Ed25519Scheme, SigScheme};
+    use anoma::types::key::ed25519::Ed25519Scheme;
+    use anoma::types::key::sigscheme::SigScheme;
     use anoma::types::storage::{BlockHash, Epoch};
     use anoma::types::transaction::Fee;
     use tempfile::tempdir;

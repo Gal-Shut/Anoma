@@ -591,7 +591,7 @@ pub fn genesis(base_dir: impl AsRef<Path>, chain_id: &ChainId) -> Genesis {
 pub fn genesis() -> Genesis {
     use anoma::ledger::parameters::EpochDuration;
     use anoma::types::address;
-    use anoma::types::key::ed25519::TryFromRef;
+    use anoma::types::key::sigscheme::TryFromRef;
 
     use crate::wallet;
 
@@ -716,7 +716,8 @@ pub fn genesis() -> Genesis {
 #[cfg(test)]
 pub mod tests {
     use anoma::types::address::testing::gen_established_address;
-    use anoma::types::key::ed25519::{Ed25519Scheme, SigScheme, IntoRef};
+    use anoma::types::key::ed25519::Ed25519Scheme;
+    use anoma::types::key::sigscheme::{SigScheme, IntoRef};
     use rand::prelude::ThreadRng;
     use rand::thread_rng;
 

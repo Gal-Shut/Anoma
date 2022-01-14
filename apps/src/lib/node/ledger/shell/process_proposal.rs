@@ -232,7 +232,8 @@ where
 #[cfg(test)]
 mod test_process_proposal {
     use anoma::types::address::xan;
-    use anoma::types::key::ed25519::SignedTxData;
+    use anoma::types::key::sigscheme::SignedTxData;
+    use anoma::types::key::ed25519::Ed25519Scheme;
     use anoma::types::storage::Epoch;
     use anoma::types::token::Amount;
     use anoma::types::transaction::{Fee, Hash};
@@ -313,7 +314,7 @@ mod test_process_proposal {
         )
         .sign(&keypair)
         .expect("Test failed");
-        let new_tx = if let Some(Ok(SignedTxData {
+        let new_tx = if let Some(Ok(SignedTxData::<Ed25519Scheme> {
             data: Some(data),
             sig,
         })) = wrapper
@@ -338,7 +339,7 @@ mod test_process_proposal {
             Tx {
                 code: vec![],
                 data: Some(
-                    SignedTxData {
+                    SignedTxData::<Ed25519Scheme> {
                         sig,
                         data: Some(new_data),
                     }

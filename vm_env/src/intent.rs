@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
 use anoma::types::intent;
-use anoma::types::key::ed25519::{Ed25519Scheme, Signature, Signed};
+use anoma::types::key::ed25519::{Ed25519Scheme, Signature};
+use anoma::types::key::sigscheme::Signed;
 
 /// Tx imports and functions.
 pub mod tx {

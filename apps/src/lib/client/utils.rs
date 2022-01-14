@@ -6,7 +6,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use anoma::types::chain::ChainId;
-use anoma::types::key::ed25519::{Ed25519Scheme, SigScheme};
+use anoma::types::key::ed25519::Ed25519Scheme;
+use anoma::types::key::sigscheme::SigScheme;
 use anoma::types::{address, token};
 use borsh::BorshSerialize;
 use flate2::read::GzDecoder;

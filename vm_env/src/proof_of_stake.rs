@@ -15,7 +15,7 @@ use anoma::ledger::pos::{
 use anoma::types::address::{self, Address, InternalAddress};
 use anoma::types::transaction::InitValidator;
 use anoma::types::{key, token};
-use anoma::types::key::ed25519::SigScheme;
+use anoma::types::key::sigscheme::SigScheme;
 pub use anoma_proof_of_stake::{
     epoched, parameters, types, PosActions as PosWrite, PosReadOnly as PosRead,
 };

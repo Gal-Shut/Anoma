@@ -7,7 +7,8 @@ use prost::Message;
 use thiserror::Error;
 
 use super::generated::types;
-use crate::types::key::ed25519::{self, Keypair, SigScheme};
+use crate::types::key::ed25519::{self, Keypair};
+use crate::types::key::sigscheme::SigScheme;
 use crate::types::time::DateTimeUtc;
 
 #[derive(Error, Debug)]
