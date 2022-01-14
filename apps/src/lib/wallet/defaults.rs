@@ -67,7 +67,7 @@ pub fn addresses_from_genesis(genesis: GenesisConfig) -> Vec<(Alias, Address)> {
 mod dev {
     use anoma::ledger::pos;
     use anoma::types::address::{self, Address};
-    use anoma::types::key::ed25519::Keypair;
+    use anoma::types::key::ed25519::{Keypair, TryFromRef};
 
     use crate::wallet::store::Alias;
 
@@ -143,7 +143,7 @@ mod dev {
             98, 161, 100, 60, 167, 200, 54, 192, 242, 218, 227, 190, 241, 65,
             42, 58, 97, 162, 253, 225, 167,
         ];
-        Keypair::from_bytes(&bytes).unwrap()
+        Keypair::try_from_ref(&bytes).unwrap()
     }
 
     pub fn bertha_keypair() -> Keypair {
@@ -156,7 +156,7 @@ mod dev {
             114, 166, 73, 81, 173, 80, 244, 249, 126, 249, 219, 184, 53, 69,
             196, 106, 230, 0,
         ];
-        Keypair::from_bytes(&bytes).unwrap()
+        Keypair::try_from_ref(&bytes).unwrap()
     }
 
     pub fn christel_keypair() -> Keypair {
@@ -169,7 +169,7 @@ mod dev {
             35, 186, 93, 37, 3, 187, 226, 47, 171, 47, 20, 213, 246, 37, 224,
             122, 101, 246, 23, 235, 39, 120,
         ];
-        Keypair::from_bytes(&bytes).unwrap()
+        Keypair::try_from_ref(&bytes).unwrap()
     }
 
     pub fn daewon_keypair() -> Keypair {
@@ -182,7 +182,7 @@ mod dev {
             75, 33, 242, 80, 3, 64, 119, 239, 252, 69, 159, 194, 64, 58, 119,
             163, 90, 169, 94, 63,
         ];
-        Keypair::from_bytes(&bytes).unwrap()
+        Keypair::try_from_ref(&bytes).unwrap()
     }
 
     pub fn validator_keypair() -> Keypair {
@@ -195,7 +195,7 @@ mod dev {
             73, 247, 155, 157, 46, 65, 77, 1, 164, 227, 128, 109, 252, 101,
             240, 167, 57, 1, 193, 208,
         ];
-        Keypair::from_bytes(&bytes).unwrap()
+        Keypair::try_from_ref(&bytes).unwrap()
     }
 
     pub fn matchmaker_keypair() -> Keypair {
@@ -208,6 +208,6 @@ mod dev {
             72, 186, 172, 153, 135, 80, 71, 107, 239, 153, 74, 10, 115, 172,
             78, 125, 24, 49, 104,
         ];
-        Keypair::from_bytes(&bytes).unwrap()
+        Keypair::try_from_ref(&bytes).unwrap()
     }
 }

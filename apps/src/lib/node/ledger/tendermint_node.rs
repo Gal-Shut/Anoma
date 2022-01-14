@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use anoma::types::address::Address;
 use anoma::types::chain::ChainId;
-use anoma::types::key::ed25519::Keypair;
+use anoma::types::key::ed25519::{Keypair, Ed25519Scheme, SigScheme, IntoRef};
 use anoma::types::time::DateTimeUtc;
 use serde_json::json;
 #[cfg(not(feature = "ABCI"))]
@@ -236,7 +236,7 @@ pub async fn write_validator_key_async(
         .expect("Couldn't create private validator key file");
     let pk: ed25519_dalek::PublicKey = consensus_key.public.clone().into();
     let pk = base64::encode(pk.as_bytes());
-    let sk = base64::encode(consensus_key.to_bytes());
+    let sk = base64::encode(consensus_key.into_ref(&mut [0; Ed25519Scheme::KEYPAIR_LENGTH]));
     let address = address.raw_hash().unwrap();
     let key = json!({
        "address": address,
@@ -276,7 +276,7 @@ pub fn write_validator_key(
         .expect("Couldn't create private validator key file");
     let pk: ed25519_dalek::PublicKey = consensus_key.public.clone().into();
     let pk = base64::encode(pk.as_bytes());
-    let sk = base64::encode(consensus_key.to_bytes());
+    let sk = base64::encode(consensus_key.into_ref(&mut [0; Ed25519Scheme::KEYPAIR_LENGTH]));
     let address = address.raw_hash().unwrap();
     let key = json!({
        "address": address,

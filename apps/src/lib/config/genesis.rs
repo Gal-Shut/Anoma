@@ -591,6 +591,7 @@ pub fn genesis(base_dir: impl AsRef<Path>, chain_id: &ChainId) -> Genesis {
 pub fn genesis() -> Genesis {
     use anoma::ledger::parameters::EpochDuration;
     use anoma::types::address;
+    use anoma::types::key::ed25519::TryFromRef;
 
     use crate::wallet;
 
@@ -602,7 +603,7 @@ pub fn genesis() -> Genesis {
     // `tests::gen_genesis_validator` below.
     let consensus_keypair = wallet::defaults::validator_keypair();
     let account_keypair = wallet::defaults::validator_keypair();
-    let staking_reward_keypair = Keypair::from_bytes(&[
+    let staking_reward_keypair = Keypair::try_from_ref(&[
         61, 198, 87, 204, 44, 94, 234, 228, 217, 72, 245, 27, 40, 2, 151, 174,
         24, 247, 69, 6, 9, 30, 44, 16, 88, 238, 77, 162, 243, 125, 240, 206,
         111, 92, 66, 23, 105, 211, 33, 236, 5, 208, 17, 88, 177, 112, 100, 154,
@@ -715,7 +716,7 @@ pub fn genesis() -> Genesis {
 #[cfg(test)]
 pub mod tests {
     use anoma::types::address::testing::gen_established_address;
-    use anoma::types::key::ed25519::{Ed25519Scheme, SigScheme};
+    use anoma::types::key::ed25519::{Ed25519Scheme, SigScheme, IntoRef};
     use rand::prelude::ThreadRng;
     use rand::thread_rng;
 
@@ -730,10 +731,11 @@ pub mod tests {
         let staking_reward_keypair = Ed25519Scheme::generate(&mut rng);
         println!("address: {}", address);
         println!("staking_reward_address: {}", staking_reward_address);
-        println!("keypair: {:?}", keypair.to_bytes());
+        println!("keypair: {:?}",
+                 keypair.into_ref(&mut [0; Ed25519Scheme::KEYPAIR_LENGTH]));
         println!(
             "staking_reward_keypair: {:?}",
-            staking_reward_keypair.to_bytes()
+            staking_reward_keypair.into_ref(&mut [0; Ed25519Scheme::KEYPAIR_LENGTH])
         );
     }
 }

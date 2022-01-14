@@ -59,6 +59,23 @@ pub struct Signature(ed25519_dalek::Signature);
 #[serde(transparent)]
 pub struct PublicKeyHash(pub(crate) String);
 
+/// A value-to-value conversion that consumes the input value.
+
+pub trait IntoRef<T> where T: ?Sized {
+    /// Performs the conversion.
+    fn into_ref<'a>(&self, slc: &'a mut T) -> &'a mut T;
+}
+
+/// Simple and safe type conversions that may fail in a controlled
+/// way under some circumstances.
+
+pub trait TryFromRef<T> : Sized where T: ?Sized {
+    /// The type returned in the event of a conversion error.
+    type Error;
+    /// Performs the conversion.
+    fn try_from_ref(value: &T) -> Result<Self, Self::Error>;
+}
+
 /// Represents a digital signature scheme. More precisely this trait captures
 /// the concepts of public keys, private keys, and signatures as well as
 /// the algorithms over these concepts to generate keys, sign messages, and
@@ -73,7 +90,9 @@ pub trait SigScheme {
     /// Represents the secret key for this scheme
     type SecretKey : BorshSerialize + BorshDeserialize + Display + FromStr;
     /// Represents the keypair for this scheme
-    type Keypair : Display + FromStr;
+    type Keypair : Display + FromStr + IntoRef<[u8]> + TryFromRef<[u8]>;
+    /// The length of Keypairs in bytes
+    const KEYPAIR_LENGTH: usize;
     /// Obtain a storage key for user's public key.
     fn pk_key(owner: &Address) -> Key;
     /// Check if the given storage key is a public key. If it is, returns the owner.
@@ -117,6 +136,8 @@ impl SigScheme for Ed25519Scheme {
     type PublicKey = PublicKey;
     type SecretKey = SecretKey;
     type Keypair = Keypair;
+
+    const KEYPAIR_LENGTH:usize = ed25519_dalek::KEYPAIR_LENGTH;
 
     fn pk_key(owner: &Address) -> Key {
         Key::from(owner.to_db_key())
@@ -240,22 +261,22 @@ pub struct Signed<T: BorshSerialize + BorshDeserialize> {
     pub sig: Signature,
 }
 
-impl Keypair {
+impl IntoRef<[u8]> for Keypair {
     /// Convert this keypair to bytes.
-    pub fn to_bytes(&self) -> [u8; 64] {
-        let mut bytes: [u8; ed25519_dalek::KEYPAIR_LENGTH] =
-            [0u8; ed25519_dalek::KEYPAIR_LENGTH];
-
+    fn into_ref<'a>(&self, bytes: &'a mut [u8]) -> &'a mut [u8] {
         bytes[..ed25519_dalek::SECRET_KEY_LENGTH]
             .copy_from_slice(self.secret.0.as_bytes());
         bytes[ed25519_dalek::SECRET_KEY_LENGTH..]
             .copy_from_slice(self.public.0.as_bytes());
         bytes
     }
+}
 
+impl TryFromRef<[u8]> for Keypair {
+    type Error = SignatureError;
     /// Construct a `Keypair` from the bytes of a `PublicKey` and `SecretKey`.
     /// Wrapper for [`ed25519_dalek::Keypair::from_bytes`].
-    pub fn from_bytes(bytes: &[u8]) -> Result<Keypair, SignatureError> {
+    fn try_from_ref(bytes: &[u8]) -> Result<Keypair, SignatureError> {
         let keypair = ed25519_dalek::Keypair::from_bytes(bytes)?;
         Ok(keypair.into())
     }
@@ -739,7 +760,7 @@ fn gen_keypair() {
 
     let mut rng: ThreadRng = thread_rng();
     let keypair = Ed25519Scheme::generate(&mut rng);
-    println!("keypair {:?}", keypair.to_bytes());
+    println!("keypair {:?}", keypair.into_ref(&mut [0; Ed25519Scheme::KEYPAIR_LENGTH]));
 }
 
 /// Helpers for testing with keys.
