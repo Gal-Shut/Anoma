@@ -1886,8 +1886,6 @@ checksum = "f7531096570974c3a9dcf9e4b8e1cede1ec26cf5046219fb3b9d897503b9be59"
 [[package]]
 name = "expectrl"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "336e2cae5de722236ff90fb9f14d212dff02123564d8978a6a088ef358fbd842"
 dependencies = [
  "conpty",
  "nix 0.21.2",

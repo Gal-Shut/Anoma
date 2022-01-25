@@ -394,7 +394,9 @@ impl AnomaCmd {
             status
         );
     }
-    // Assert that the process exited with failure
+
+    /// Assert that the process exited with failure
+    #[allow(dead_code)]
     pub fn assert_failure(&self) {
         let status = self.session.wait().unwrap();
         assert_ne!(
@@ -411,7 +413,7 @@ impl AnomaCmd {
     pub fn exp_string(&mut self, needle: &str) -> Result<String> {
         let found = self.session
             .expect(needle)
-            .map_err(|e| eyre!(format!("{}", e)))?;
+            .map_err(|e| eyre!(format!("{}\n Needle: {}", e, needle)))?;
         if found.is_empty() {
             Err(eyre!(format!("Expected needle not found: {}", needle)))
         } else {
@@ -491,8 +493,9 @@ impl AnomaCmd {
 impl Drop for AnomaCmd {
     fn drop(&mut self) {
         // Clean up the process, if its still running
-        if let Ok(Ok(output)) = self.session.expect(Eof)
-            .map(|found| String::from_utf8(found.before().to_vec()))
+        println!("{}", "Commence the clean up!".underline().bright_green());
+        if let Ok(output) = self.session.expect(Eof)
+            .map(|found| "Nothing for now")//String::from_utf8(found.before().to_vec()))
         {
             let output = output.trim();
             if !output.is_empty() {
