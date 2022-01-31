@@ -14,9 +14,9 @@ use assert_cmd::assert::OutputAssertExt;
 use color_eyre::eyre::Result;
 use color_eyre::owo_colors::OwoColorize;
 use escargot::CargoBuild;
-use eyre::eyre;
-use expectrl::{Eof, WaitStatus};
 use expectrl::session::Session;
+use expectrl::{Eof, WaitStatus};
+use eyre::eyre;
 use tempfile::{tempdir, TempDir};
 
 /// For `color_eyre::install`, which fails if called more than once in the same
@@ -385,24 +385,57 @@ pub struct AnomaCmd {
     pub cmd_str: String,
 }
 
+/// A command under test running on a background thread
+pub struct LiveAnomaCmd {
+    join_handle: std::thread::JoinHandle<AnomaCmd>,
+    abort_send: std::sync::mpsc::Sender<()>,
+}
+
+impl LiveAnomaCmd {
+    /// Re-gain control of a live command to check its output.
+    pub fn gain_control(self) -> AnomaCmd {
+        self.abort_send.send(()).unwrap();
+        self.join_handle.join().unwrap()
+    }
+}
+
 impl AnomaCmd {
+    /// Keep reading the session's output in a background thread to prevent the
+    /// buffer from filling up. Call `gain_control` on the returned
+    /// [`LiveAnomaCmd`] to stop the loop and return back the original
+    /// command.
+    pub fn give_up_control(self) -> LiveAnomaCmd {
+        let (abort_send, abort_recv) = std::sync::mpsc::channel();
+        let join_handle = std::thread::spawn(move || {
+            let mut cmd = self;
+            loop {
+                match abort_recv.try_recv() {
+                    Ok(())
+                    | Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                        return cmd;
+                    }
+                    Err(std::sync::mpsc::TryRecvError::Empty) => {}
+                }
+                cmd.session.stream_mut().read_available().unwrap();
+            }
+        });
+        LiveAnomaCmd {
+            join_handle,
+            abort_send,
+        }
+    }
+
     /// Assert that the process exited with success
     pub fn assert_success(&self) {
         let status = self.session.wait().unwrap();
-        assert_eq!(
-            WaitStatus::Exited(self.session.pid(), 0),
-            status
-        );
+        assert_eq!(WaitStatus::Exited(self.session.pid(), 0), status);
     }
 
     /// Assert that the process exited with failure
     #[allow(dead_code)]
     pub fn assert_failure(&self) {
         let status = self.session.wait().unwrap();
-        assert_ne!(
-            WaitStatus::Exited(self.session.pid(), 0),
-            status
-        );
+        assert_ne!(WaitStatus::Exited(self.session.pid(), 0), status);
     }
 
     /// Wait until provided string is seen on stdout of child process.
@@ -411,8 +444,9 @@ impl AnomaCmd {
     /// Wrapper over the inner `PtySession`'s functions with custom error
     /// reporting.
     pub fn exp_string(&mut self, needle: &str) -> Result<String> {
-        let found = self.session
-            .expect(needle)
+        let found = self
+            .session
+            .expect_eager(needle)
             .map_err(|e| eyre!(format!("{}\n Needle: {}", e, needle)))?;
         if found.is_empty() {
             Err(eyre!(format!("Expected needle not found: {}", needle)))
@@ -420,7 +454,6 @@ impl AnomaCmd {
             String::from_utf8(found.before().to_vec())
                 .map_err(|e| eyre!(format!("{}", e)))
         }
-
     }
 
     /// Wait until provided regex is seen on stdout of child process.
@@ -431,8 +464,9 @@ impl AnomaCmd {
     /// Wrapper over the inner `Session`'s functions with custom error
     /// reporting as well as converting bytes back to `String`.
     pub fn exp_regex(&mut self, regex: &str) -> Result<(String, String)> {
-        let found = self.session
-            .expect(expectrl::Regex(regex))
+        let found = self
+            .session
+            .expect_eager(expectrl::Regex(regex))
             .map_err(|e| eyre!(format!("{}", e)))?;
         if found.is_empty() {
             Err(eyre!(format!("Expected regex not found: {}", regex)))
@@ -452,11 +486,10 @@ impl AnomaCmd {
     /// reporting.
     #[allow(dead_code)]
     pub fn exp_eof(&mut self) -> Result<String> {
-        let found = self.session
-            .expect(Eof)
-            .map_err(|e| eyre!(format!("{}", e)))?;
+        let found =
+            self.session.expect_eager(Eof).map_err(|e| eyre!("{}", e))?;
         if found.is_empty() {
-            Err(eyre!(format!("Expected EOF")))
+            Err(eyre!("Expected EOF"))
         } else {
             String::from_utf8(found.before().to_vec())
                 .map_err(|e| eyre!(format!("{}", e)))
@@ -493,9 +526,16 @@ impl AnomaCmd {
 impl Drop for AnomaCmd {
     fn drop(&mut self) {
         // Clean up the process, if its still running
-        println!("{}", "Commence the clean up!".underline().bright_green());
-        if let Ok(output) = self.session.expect(Eof)
-            .map(|found| "Nothing for now")//String::from_utf8(found.before().to_vec()))
+        println!(
+            "{}: {}",
+            "Cleaning up".underline().bright_green(),
+            self.cmd_str
+        );
+        let _ = self.session.exit(true);
+        if let Ok(Ok(output)) = self
+            .session
+            .expect_eager(Eof)
+            .map(|found| String::from_utf8(found.before().to_vec()))
         {
             let output = output.trim();
             if !output.is_empty() {
@@ -508,7 +548,6 @@ impl Drop for AnomaCmd {
                 );
             }
         }
-        let _ = self.session.exit(true);
     }
 }
 
@@ -592,9 +631,7 @@ where
         sleep(1);
 
         // If the command failed, try print out its output
-        if let Ok(WaitStatus::Exited(_, result)) =
-        session.status()
-        {
+        if let Ok(WaitStatus::Exited(_, result)) = session.status() {
             if result != 0 {
                 return Err(eyre!(
                     "\n\n{}: {}\n{}: {} \n\n{}: {}",
@@ -603,11 +640,11 @@ where
                     "Location".underline().red(),
                     loc,
                     "Output".underline().red(),
-                    session.expect(Eof).map_or_else(|err| format!(
-                        "No output found, error: {}",
-                        err
-                    ),
-                    |found| String::from_utf8(found.before().to_vec()).unwrap())
+                    session.expect_eager(Eof).map_or_else(
+                        |err| format!("No output found, error: {}", err),
+                        |found| String::from_utf8(found.before().to_vec())
+                            .unwrap()
+                    )
                 ));
             }
         }

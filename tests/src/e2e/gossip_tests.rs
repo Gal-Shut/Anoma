@@ -121,6 +121,7 @@ fn match_intents() -> Result<()> {
     ledger.exp_string("No state could be found")?;
     // Wait to commit a block
     ledger.exp_regex(r"Committed block hash.*, height: [0-9]+")?;
+    let live_ledger = ledger.give_up_control();
 
     let intent_a_path_input = test.base_dir.path().join("intent.A.data");
     let intent_b_path_input = test.base_dir.path().join("intent.B.data");
@@ -305,7 +306,9 @@ fn match_intents() -> Result<()> {
         "crafting transfer: {}, {}, 100",
         albert, christel
     ))?;
+    let _live_gossip = session_gossip.give_up_control();
 
+    let mut ledger = live_ledger.gain_control();
     // check that the all VPs accept the transaction
     ledger.exp_string("all VPs accepted apply_tx storage modification")?;
 

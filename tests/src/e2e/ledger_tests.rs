@@ -181,6 +181,7 @@ fn ledger_txs_and_queries() -> Result<()> {
     } else {
         ledger.exp_string("Started node")?;
     }
+    let _live_ledger = ledger.give_up_control();
 
     let vp_user = wasm_abs_path(VP_USER_WASM);
     let vp_user = vp_user.to_string_lossy();
@@ -335,6 +336,7 @@ fn invalid_transactions() -> Result<()> {
     }
     // Wait to commit a block
     ledger.exp_regex(r"Committed block hash.*, height: [0-9]+")?;
+    let live_ledger = ledger.give_up_control();
 
     // 2. Submit a an invalid transaction (trying to mint tokens should fail
     // in the token's VP)
@@ -383,6 +385,7 @@ fn invalid_transactions() -> Result<()> {
     client.exp_string(r#""code": "1"#)?;
 
     //client.assert_success();
+    let mut ledger = live_ledger.gain_control();
     ledger.exp_string("some VPs rejected apply_tx storage modification")?;
 
     // Wait to commit a block
@@ -435,6 +438,7 @@ fn invalid_transactions() -> Result<()> {
     if !cfg!(feature = "ABCI") {
         client.exp_string("Transaction accepted")?;
     }
+    ledger.exp_string("Transaction failed with")?;
     client.exp_string("Transaction applied")?;
 
     client.exp_string("Error trying to apply a transaction")?;
@@ -488,6 +492,7 @@ fn pos_bonds() -> Result<()> {
     } else {
         ledger.exp_string("Started node")?;
     }
+    let _live_ledger = ledger.give_up_control();
 
     let validator_one_rpc = get_actor_rpc(&test, &Who::Validator(0));
 
@@ -683,6 +688,7 @@ fn pos_init_validator() -> Result<()> {
     } else {
         ledger.exp_string("Started node")?;
     }
+    let _live_ledger = ledger.give_up_control();
 
     let validator_one_rpc = get_actor_rpc(&test, &Who::Validator(0));
 
@@ -852,6 +858,7 @@ fn ledger_many_txs_in_a_block() -> Result<()> {
 
     // Wait to commit a block
     ledger.exp_regex(r"Committed block hash.*, height: [0-9]+")?;
+    let _live_ledger = ledger.give_up_control();
 
     let validator_one_rpc = Arc::new(get_actor_rpc(&test, &Who::Validator(0)));
 

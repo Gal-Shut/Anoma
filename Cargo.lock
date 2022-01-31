@@ -1886,6 +1886,7 @@ checksum = "f7531096570974c3a9dcf9e4b8e1cede1ec26cf5046219fb3b9d897503b9be59"
 [[package]]
 name = "expectrl"
 version = "0.2.0"
+source = "git+https://github.com/heliaxdev/expectrl.git?branch=tomas/expect-eager#b50500c72f78cbdb5f562edbc65ac09c0e5d4a77"
 dependencies = [
  "conpty",
  "nix 0.21.2",
@@ -4705,9 +4706,9 @@ dependencies = [
 
 [[package]]
 name = "ptyprocess"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1fbb64c34c53b8df70638c90fa4a3da7d161f7a342b707b9247b986f37e787a"
+checksum = "69c28fcebfd842bfe19d69409fc321230ea8c1bebe31f274906485c761ce1917"
 dependencies = [
  "nix 0.21.2",
 ]
