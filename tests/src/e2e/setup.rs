@@ -566,7 +566,7 @@ where
         cmd.release()
     };
     let mut cmd = cmd.run().unwrap().command();
-    cmd.env("ANOMA_LOG", "anoma=debug")
+    cmd.env("ANOMA_LOG", "anoma=info")
         .current_dir(working_dir)
         .args(&["--base-dir", &base_dir.as_ref().to_string_lossy()])
         .args(args);
