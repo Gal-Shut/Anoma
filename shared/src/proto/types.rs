@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use prost::Message;
 use thiserror::Error;
 
@@ -31,7 +31,9 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Clone, Debug, PartialEq, BorshSerialize, BorshDeserialize, Hash)]
+#[derive(
+    Clone, Debug, PartialEq, BorshSerialize, BorshDeserialize, BorshSchema, Hash,
+)]
 pub struct Tx {
     pub code: Vec<u8>,
     pub data: Option<Vec<u8>>,

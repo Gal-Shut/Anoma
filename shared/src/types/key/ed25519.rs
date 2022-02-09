@@ -6,7 +6,7 @@ use std::hash::{Hash, Hasher};
 use std::io::{ErrorKind, Write};
 use std::str::FromStr;
 
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 pub use ed25519_dalek::SignatureError;
 use ed25519_dalek::{ExpandedSecretKey, Signer, Verifier};
 #[cfg(feature = "rand")]
@@ -48,6 +48,7 @@ pub struct Signature(ed25519_dalek::Signature);
     Clone,
     BorshSerialize,
     BorshDeserialize,
+    BorshSchema,
     PartialEq,
     Eq,
     PartialOrd,
@@ -125,7 +126,7 @@ pub fn verify_signature_raw(
 /// Because the signature is not checked by the ledger, we don't inline it into
 /// the `Tx` type directly. Instead, the signature is attached to the `tx.data`,
 /// which is can then be checked by a validity predicate wasm.
-#[derive(Clone, Debug, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, BorshSerialize, BorshDeserialize, BorshSchema)]
 pub struct SignedTxData {
     /// The original tx data bytes, if any
     pub data: Option<Vec<u8>>,
@@ -309,6 +310,24 @@ impl BorshSerialize for PublicKey {
     }
 }
 
+impl BorshSchema for PublicKey {
+    fn add_definitions_recursively(
+        definitions: &mut std::collections::HashMap<
+            borsh::schema::Declaration,
+            borsh::schema::Definition,
+        >,
+    ) {
+        // Encoded as `Vec<u8>`
+        let elements = "u8".into();
+        let definition = borsh::schema::Definition::Sequence { elements };
+        definitions.insert(Self::declaration(), definition);
+    }
+
+    fn declaration() -> borsh::schema::Declaration {
+        "PublicKey".into()
+    }
+}
+
 impl BorshDeserialize for SecretKey {
     fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
         // deserialize the bytes first
@@ -381,6 +400,24 @@ impl BorshSerialize for Signature {
             .try_to_vec()
             .expect("Signature bytes encoding shouldn't fail");
         writer.write_all(&bytes)
+    }
+}
+
+impl BorshSchema for Signature {
+    fn add_definitions_recursively(
+        definitions: &mut std::collections::HashMap<
+            borsh::schema::Declaration,
+            borsh::schema::Definition,
+        >,
+    ) {
+        // Encoded as `Vec<u8>`
+        let elements = "u8".into();
+        let definition = borsh::schema::Definition::Sequence { elements };
+        definitions.insert(Self::declaration(), definition);
+    }
+
+    fn declaration() -> borsh::schema::Declaration {
+        "Signature".into()
     }
 }
 
