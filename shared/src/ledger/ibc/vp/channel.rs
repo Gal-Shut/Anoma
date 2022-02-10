@@ -15,6 +15,8 @@ use ibc::core::ics03_connection::connection::ConnectionEnd;
 #[cfg(not(feature = "ABCI"))]
 use ibc::core::ics03_connection::context::ConnectionReader;
 #[cfg(not(feature = "ABCI"))]
+use ibc::core::ics03_connection::error::Error as Ics03Error;
+#[cfg(not(feature = "ABCI"))]
 use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 #[cfg(not(feature = "ABCI"))]
 use ibc::core::ics04_channel::context::ChannelReader;
@@ -48,6 +50,8 @@ use ibc::core::ics26_routing::msgs::Ics26Envelope;
 use ibc::proofs::Proofs;
 #[cfg(not(feature = "ABCI"))]
 use ibc::timestamp::Timestamp;
+#[cfg(not(feature = "ABCI"))]
+use ibc_abci::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 #[cfg(feature = "ABCI")]
 use ibc_abci::core::ics02_client::client_consensus::AnyConsensusState;
 #[cfg(feature = "ABCI")]
@@ -60,6 +64,8 @@ use ibc_abci::core::ics02_client::height::Height;
 use ibc_abci::core::ics03_connection::connection::ConnectionEnd;
 #[cfg(feature = "ABCI")]
 use ibc_abci::core::ics03_connection::context::ConnectionReader;
+#[cfg(feature = "ABCI")]
+use ibc_abci::core::ics03_connection::error::Error as Ics03Error;
 #[cfg(feature = "ABCI")]
 use ibc_abci::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 #[cfg(feature = "ABCI")]
@@ -96,9 +102,13 @@ use ibc_abci::proofs::Proofs;
 use ibc_abci::timestamp::Timestamp;
 use sha2::Digest;
 #[cfg(not(feature = "ABCI"))]
+use tendermint::Time;
+#[cfg(not(feature = "ABCI"))]
 use tendermint_proto::Protobuf;
 #[cfg(feature = "ABCI")]
 use tendermint_proto_abci::Protobuf;
+#[cfg(feature = "ABCI")]
+use tendermint_stable::Time;
 use thiserror::Error;
 
 use super::super::handler::{
@@ -919,11 +929,19 @@ where
         ClientReader::host_height(self)
     }
 
-    fn host_timestamp(&self) -> Timestamp {
-        match self.ctx.storage.get_block_header().0 {
-            Some(h) => h.time.into(),
-            None => Timestamp::none(),
-        }
+    fn host_consensus_state(
+        &self,
+        _height: Height,
+    ) -> Ics04Result<AnyConsensusState> {
+        ClientReader::pending_host_consensus_state(self).map_err(|e| {
+            Ics04Error::ics03_connection(Ics03Error::ics02_client(e))
+        })
+    }
+
+    fn pending_host_consensus_state(&self) -> Ics04Result<AnyConsensusState> {
+        ClientReader::pending_host_consensus_state(self).map_err(|e| {
+            Ics04Error::ics03_connection(Ics03Error::ics02_client(e))
+        })
     }
 
     fn client_update_time(
@@ -935,12 +953,9 @@ where
         match self.ctx.read_post(&key) {
             Ok(Some(value)) => {
                 // As ibc-go, u64 like a counter is encoded with big-endian
-                let ns: [u8; 8] = value
-                    .try_into()
+                let time = Time::decode_vec(&value)
                     .map_err(|_| Ics04Error::implementation_specific())?;
-                let ns = u64::from_be_bytes(ns);
-                Timestamp::from_nanoseconds(ns)
-                    .map_err(|_| Ics04Error::implementation_specific())
+                Ok(time.into())
             }
             Ok(None) => Err(Ics04Error::processed_time_not_found(
                 client_id.clone(),

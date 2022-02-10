@@ -23,6 +23,7 @@ tx_withdraw = []
 vp_testnet_faucet = ["once_cell"]
 vp_token = []
 vp_user = ["once_cell", "rust_decimal"]
+tx_ibc = []
 
 [dependencies]
 anoma_tx_prelude = {path = "../../tx_prelude"}
@@ -36,8 +37,8 @@ wee_alloc = "0.4.5"
 [dev-dependencies]
 anoma_tests = {path = "../../tests"}
 proptest = "1.0.0"
-tracing = "0.1.29"
-tracing-subscriber = {version = "0.2.25", default-features = false, features = ["env-filter", "fmt"]}
+tracing = { git = "https://github.com/tokio-rs/tracing/", tag = "tracing-0.1.30" }
+tracing-subscriber = {git = "https://github.com/tokio-rs/tracing/", tag = "tracing-0.1.30", default-features = false, features = ["env-filter", "fmt"]}
 
 [patch.crates-io]
 tendermint = {git = "https://github.com/heliaxdev/tendermint-rs", branch = "yuji/rebase_v0.23.5"}

@@ -228,7 +228,7 @@ pub mod tx_ibc {
     fn apply_tx(tx_data: Vec<u8>) {
         let signed =
             key::ed25519::SignedTxData::try_from_slice(&tx_data[..]).unwrap();
-        Ibc.dispatch(&signed.data.unwrap())
+        Ibc.dispatch(&signed.data.unwrap()).unwrap()
     }
 }
 

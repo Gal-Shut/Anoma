@@ -16,6 +16,7 @@ wasms += tx_withdraw
 wasms += vp_testnet_faucet
 wasms += vp_token
 wasms += vp_user
+wasms += tx_ibc
 
 # Build all wasms
 all: $(wasms)

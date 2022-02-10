@@ -23,6 +23,7 @@ use anoma::types::address::{self, Address, InternalAddress};
 use anoma::types::ibc::data::FungibleTokenPacketData;
 use anoma::types::ibc::IbcEvent;
 use anoma::types::storage::{BlockHeight, Epoch, Key};
+use anoma::types::time::Rfc3339String;
 use anoma::types::token::{self, Amount};
 use anoma::vm::{wasm, WasmCacheRwAccess};
 #[cfg(not(feature = "ABCI"))]
@@ -297,6 +298,10 @@ impl IbcActions for TestIbcActions {
             tx_host_env::get_block_epoch(),
             tx_host_env::get_block_height(),
         )
+    }
+
+    fn get_header_time(&self) -> Rfc3339String {
+        Rfc3339String(tx_host_env::get_block_time())
     }
 }
 
