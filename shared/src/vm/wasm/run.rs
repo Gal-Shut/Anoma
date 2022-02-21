@@ -63,6 +63,10 @@ pub enum Error {
     },
     #[error("Wasm validation error: {0}")]
     ValidationError(WasmValidationError),
+    #[error("Error deserializing WASM from cache: {0}")]
+    CacheSerializationError(wasmer::SerializeError),
+    #[error("Error deserializing WASM from cache: {0}")]
+    CacheDeserializationError(wasmer::DeserializeError),
 }
 
 /// Result for functions that may fail

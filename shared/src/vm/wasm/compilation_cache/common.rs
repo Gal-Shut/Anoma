@@ -46,8 +46,35 @@ pub trait CacheName: Clone + std::fmt::Debug {
     fn name() -> &'static str;
 }
 
+// TODO temp work-around for a leak (see <https://github.com/wasmerio/wasmer/issues/2780>)
+/// In-memory module contains the serialized bytes of the module's artifact.
+#[derive(Debug)]
+pub struct InMemoryModule {
+    artifact: Vec<u8>,
+}
+
+impl InMemoryModule {
+    /// Load a module from memory. This should only ever be used with modules
+    /// that are known to have been created from a valid [`wasmer::Module`]
+    /// instance.
+    pub fn load(&self, store: &Store) -> Result<Module, wasm::run::Error> {
+        unsafe { Module::deserialize(store, &self.artifact) }
+            .map_err(wasm::run::Error::CacheDeserializationError)
+    }
+}
+
+impl TryFrom<&Module> for InMemoryModule {
+    type Error = wasmer::SerializeError;
+
+    fn try_from(value: &Module) -> Result<Self, Self::Error> {
+        let artifact = value.serialize()?;
+        Ok(Self { artifact })
+    }
+}
+
 /// In-memory LRU cache of compiled modules
-type MemoryCache = CLruCache<Hash, Module, RandomState, ModuleCacheScale>;
+type MemoryCache =
+    CLruCache<Hash, InMemoryModule, RandomState, ModuleCacheScale>;
 
 /// Compilation progress
 #[derive(Debug)]
@@ -61,13 +88,15 @@ enum Compilation {
 #[derive(Debug)]
 struct ModuleCacheScale;
 
-impl WeightScale<Hash, Module> for ModuleCacheScale {
-    fn weight(&self, key: &Hash, value: &Module) -> usize {
+impl WeightScale<Hash, InMemoryModule> for ModuleCacheScale {
+    fn weight(&self, key: &Hash, value: &InMemoryModule) -> usize {
         // We only want to limit the max memory size, not the number of
         // elements, so we use the size of the module as its scale
         // and subtract 1 from it to negate the increment of the cache length.
 
-        let size = loupe::size_of_val(&value) + HASH_BYTES;
+        // TODO temp work-around for a leak (see <https://github.com/wasmerio/wasmer/issues/2780>)
+        // let size = loupe::size_of_val(&value) + HASH_BYTES;
+        let size = value.artifact.len() + HASH_BYTES;
         tracing::debug!(
             "WASM module hash {}, size including the hash {}",
             key.to_string(),
@@ -131,7 +160,9 @@ impl<N: CacheName, A: WasmCacheAccess> Cache<N, A> {
                 N::name(),
                 hash.to_string()
             );
-            return Ok((module.clone(), store()));
+            let store = store();
+            let module = module.load(&store)?;
+            return Ok((module, store));
         }
         drop(in_memory);
 
@@ -148,7 +179,9 @@ impl<N: CacheName, A: WasmCacheAccess> Cache<N, A> {
                             N::name(),
                             hash.to_string()
                         );
-                        return Ok((module.clone(), store()));
+                        let store = store();
+                        let module = module.load(&store)?;
+                        return Ok((module, store));
                     }
 
                     let (module, store) = file_load_module(&self.dir, &hash);
@@ -158,7 +191,9 @@ impl<N: CacheName, A: WasmCacheAccess> Cache<N, A> {
                         hash.to_string()
                     );
                     // Put into cache, ignore result if it's full
-                    let _ = in_memory.put_with_weight(hash, module.clone());
+                    let in_memory_module = InMemoryModule::try_from(&module)
+                        .map_err(wasm::run::Error::CacheSerializationError)?;
+                    let _ = in_memory.put_with_weight(hash, in_memory_module);
 
                     return Ok((module, store));
                 }
@@ -237,7 +272,9 @@ impl<N: CacheName, A: WasmCacheAccess> Cache<N, A> {
                     // Put into cache, ignore the result (fails if the module
                     // cannot fit into the cache)
                     let mut in_memory = self.in_memory.write().unwrap();
-                    let _ = in_memory.put_with_weight(hash, module.clone());
+                    let in_memory_module = InMemoryModule::try_from(&module)
+                        .map_err(wasm::run::Error::CacheSerializationError)?;
+                    let _ = in_memory.put_with_weight(hash, in_memory_module);
 
                     return Ok((module, store));
                 }
@@ -261,7 +298,9 @@ impl<N: CacheName, A: WasmCacheAccess> Cache<N, A> {
                 N::name(),
                 hash.to_string()
             );
-            return Ok((module.clone(), store()));
+            let store = store();
+            let module = module.load(&store)?;
+            return Ok((module, store));
         }
         drop(in_memory);
 
@@ -278,7 +317,9 @@ impl<N: CacheName, A: WasmCacheAccess> Cache<N, A> {
                             N::name(),
                             hash.to_string()
                         );
-                        return Ok((module.clone(), store()));
+                        let store = store();
+                        let module = module.load(&store)?;
+                        return Ok((module, store));
                     }
 
                     let (module, store) = file_load_module(&self.dir, &hash);
@@ -938,7 +979,9 @@ mod test {
                 1,
             );
             let (module, _store) = cache.fetch_or_compile(&code).unwrap();
-            loupe::size_of_val(&module) + HASH_BYTES + extra_bytes
+            // TODO temp work-around for a leak (see <https://github.com/wasmerio/wasmer/issues/2780>)
+            // loupe::size_of_val(&module) + HASH_BYTES + extra_bytes
+            module.serialize().unwrap().len() + HASH_BYTES + extra_bytes
         };
         println!(
             "Compiled module {} size including the hash: {} ({})",
