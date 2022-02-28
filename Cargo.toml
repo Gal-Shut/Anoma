@@ -12,6 +12,7 @@ members = [
   "vm_env",
   "macros",
   "vp_prelude",
+  "wasm_leak",
 ]
 
 # wasm packages have to be built separately

@@ -7215,6 +7215,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm_leak"
+version = "0.1.0"
+dependencies = [
+ "anoma",
+ "borsh",
+]
+
+[[package]]
 name = "wasmer"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
