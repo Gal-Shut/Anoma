@@ -714,7 +714,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "miniz_oxide",
- "object",
+ "object 0.27.1",
  "rustc-demangle",
 ]
 
@@ -1813,6 +1813,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c5f0096a91d210159eceb2ff5e1c4da18388a170e1e3ce948aac9c8fdbbf595"
 dependencies = [
  "heck",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "enum-iterator"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4eeac5c5edb79e4e39fe8439ef35207780a11f69c52cbe424ce3dfad4cb78de6"
+dependencies = [
+ "enum-iterator-derive",
+]
+
+[[package]]
+name = "enum-iterator-derive"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c134c37760b27a871ba422106eedbb8247da973a09e82558bf26d619c882b159"
+dependencies = [
  "proc-macro2",
  "quote",
  "syn",
@@ -4068,7 +4088,17 @@ version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67ac1d3f9a1d3616fd9a60c8d74296f22406a238b6a72f5cc1e6f314df4ffbf9"
 dependencies = [
+ "memchr",
+]
+
+[[package]]
+name = "object"
+version = "0.28.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40bec70ba014595f99f7aa110b84331ffe1ee9aece7fe6f387cc7e3ecda4d456"
+dependencies = [
  "crc32fast",
+ "hashbrown",
  "indexmap",
  "memchr",
 ]
@@ -7224,9 +7254,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23f0188c23fc1b7de9bd7f8b834d0b1cd5edbe66e287452e8ce36d24418114f7"
+checksum = "d23f1bf05a2f86ad775dfe73b1da1842a58ffa549cd711c083cf56520c8025c4"
 dependencies = [
  "cfg-if 1.0.0",
  "indexmap",
@@ -7250,9 +7280,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-cache"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e75c10d11f4a62c5e152170db7831d6f81155b4524fbf0a4f5c78c1d8f7e51db"
+checksum = "2a2bc8f5827465a4586268ae1d8889baebabcd3b179d1499418b752e4075f60a"
 dependencies = [
  "blake3",
  "hex",
@@ -7262,9 +7292,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-compiler"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88c51cc589772c5f90bd329244c2416976d6cb2ee00d59429aaa8f421d9fe447"
+checksum = "32158a07455808eccd655c3333d22a6a9eeb01c5891b750e6c7a66c43317b1fe"
 dependencies = [
  "enumset",
  "loupe",
@@ -7281,9 +7311,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-compiler-cranelift"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09691e3e323b4e1128d2127f60f9cd988b66ce49afc8184b071c2b5ab16793f2"
+checksum = "b2afe1d581016703af0a6ac37511661b5ee5ceceee7bc387afcd4035ff36c2fc"
 dependencies = [
  "cranelift-codegen",
  "cranelift-entity",
@@ -7302,9 +7332,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-compiler-singlepass"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "271d3da24c5d1a8bb3f9fc3944ba96d2588b6fa16a0bcef91765db853aeccac4"
+checksum = "e06040411d28aa7ba03fcf03971fbcd719b1020c5aa3eae2891587e892ef51ee"
 dependencies = [
  "byteorder",
  "dynasm",
@@ -7321,9 +7351,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-derive"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93f5cb7b09640e09f1215da95d6fb7477d2db572f064b803ff705f39ff079cc5"
+checksum = "4ecae9427e1f0ae664256f6620924f3eabb0983bdb18e1c36d15c15ba6ee35c9"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -7333,9 +7363,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-engine"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab20311c354fe2c12bc766417e0a1a45f399c1cd8ff262127d1dc86d0588971a"
+checksum = "0823953c2775707cb0e151c2da97c4621193cf58308ee4f48b2df17d114c3d82"
 dependencies = [
  "backtrace",
  "enumset",
@@ -7355,15 +7385,17 @@ dependencies = [
 
 [[package]]
 name = "wasmer-engine-dylib"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8dd5b7a74731e1dcccaf10a8ff5f72216c82f12972ce17cc81c6caa1afff75ea"
+checksum = "75db66afeacaf2d12a3d6af916410bc41459e01477f6628d637b77f5785f7c8c"
 dependencies = [
  "cfg-if 1.0.0",
+ "enum-iterator",
  "enumset",
  "leb128",
  "libloading",
  "loupe",
+ "object 0.28.3",
  "rkyv",
  "serde 1.0.136",
  "tempfile",
@@ -7378,11 +7410,12 @@ dependencies = [
 
 [[package]]
 name = "wasmer-engine-universal"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfeae8d5b825ad7abcf9a34e66eb11e1507b21020efe7bbf9897e3dd8d7869e2"
+checksum = "12a18da6797a46b5b35043796fd5d3451d384226e4531888ff1966dcb029a8ea"
 dependencies = [
  "cfg-if 1.0.0",
+ "enum-iterator",
  "enumset",
  "leb128",
  "loupe",
@@ -7397,11 +7430,11 @@ dependencies = [
 
 [[package]]
 name = "wasmer-object"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3d4714e4f3bdc3b2157c24284417d19cd99de036da31d00ec5664712dcb72f7"
+checksum = "ffb88abea6a488ef64674c72c813564de7877a6e046d4b3f3e20c41302b82a10"
 dependencies = [
- "object",
+ "object 0.28.3",
  "thiserror",
  "wasmer-compiler",
  "wasmer-types",
@@ -7409,9 +7442,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-types"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "434e1c0177da0a74ecca90b2aa7d5e86198260f07e8ba83be89feb5f0a4aeead"
+checksum = "30bffc68539057bc92c10b260175d36acb90926840b175939e663eafdd4fbdb6"
 dependencies = [
  "indexmap",
  "loupe",
@@ -7422,13 +7455,14 @@ dependencies = [
 
 [[package]]
 name = "wasmer-vm"
-version = "2.1.1"
+version = "2.2.0-rc2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc8f964ebba70d9f81340228b98a164782591f00239fc7f01e1b67afcf0e0156"
+checksum = "215cc368b140d2eb3d3ab826dd01c602dc337c2374ac5d48f5652bd7eeac0d05"
 dependencies = [
  "backtrace",
  "cc",
  "cfg-if 1.0.0",
+ "enum-iterator",
  "indexmap",
  "libc",
  "loupe",
