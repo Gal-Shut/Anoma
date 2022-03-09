@@ -21,6 +21,8 @@ pub enum Error {
     Temporary { error: String },
     #[error("Failed trying to convert slice to a hash: {0}")]
     ConversionFailed(std::array::TryFromSliceError),
+    #[error("Couldn't decode hash from hex string: {0}")]
+    FromHexError(#[from] hex::FromHexError),
 }
 
 /// Result for functions that may fail
@@ -29,6 +31,7 @@ pub type HashResult<T> = std::result::Result<T, Error>;
 #[derive(
     Clone,
     Debug,
+    Default,
     Hash,
     PartialEq,
     Eq,
@@ -86,5 +89,15 @@ impl Hash {
     pub fn sha256(data: impl AsRef<[u8]>) -> Self {
         let digest = Sha256::digest(data.as_ref());
         Self(*digest.as_ref())
+    }
+}
+
+impl TryFrom<&str> for Hash {
+    type Error = self::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let mut hash = Hash([0; 32]);
+        hex::decode_to_slice(value, &mut hash.0)?;
+        Ok(hash)
     }
 }

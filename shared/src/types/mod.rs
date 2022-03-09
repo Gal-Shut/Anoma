@@ -11,6 +11,7 @@ pub mod internal;
 pub mod key;
 pub mod matchmaker;
 pub mod nft;
+pub mod rpc;
 pub mod storage;
 pub mod time;
 pub mod token;
