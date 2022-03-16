@@ -81,7 +81,7 @@ impl From<Option<String>> for TendermintMode {
                 _ => panic!("Unrecognized mode"),
             }
         } else {
-            TendermintMode::Validator
+            TendermintMode::Full
         }
     }
 }
