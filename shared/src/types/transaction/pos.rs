@@ -26,7 +26,8 @@ pub struct Bond {
     /// The amount of tokens
     pub amount: token::Amount,
     /// Source address for delegations. For self-bonds, the validator is
-    /// also the source.
+    /// also the source, so the validity predicate expected that
+    /// `source.is_none()`.
     pub source: Option<Address>,
 }
 
