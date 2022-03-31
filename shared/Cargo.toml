@@ -62,7 +62,7 @@ wasm-runtime = [
 ]
 
 [dependencies]
-anoma_proof_of_stake = {path = "../proof_of_stake"}
+#anoma_proof_of_stake = {path = "../proof_of_stake"}
 ark-bls12-381 = {version = "0.3"}
 ark-ec = {version = "0.3", optional = true}
 ark-serialize = "0.3"

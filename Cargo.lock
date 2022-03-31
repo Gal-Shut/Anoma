@@ -76,7 +76,6 @@ dependencies = [
 name = "anoma"
 version = "0.5.0"
 dependencies = [
- "anoma_proof_of_stake",
  "ark-bls12-381",
  "ark-ec",
  "ark-serialize",
