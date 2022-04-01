@@ -4,13 +4,14 @@ use std::convert::TryFrom;
 use std::fmt::Display;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::str::FromStr;
-use masp_primitives::transaction::Transaction;
 
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use masp_primitives::transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::types::address::{masp, Address, Error as AddressError, InternalAddress};
+use crate::bech32m;
+use crate::types::address::{masp, Address, InternalAddress};
 use crate::types::ibc::data::FungibleTokenPacketData;
 use crate::types::storage::{DbKeySeg, Key, KeySeg};
 
@@ -283,10 +284,12 @@ pub fn is_non_owner_balance_key(key: &Key) -> Option<&Address> {
 /// Check if the given storage key is a masp key
 pub fn is_masp_key(key: &Key) -> bool {
     match &key.segments[..] {
-        [
-            DbKeySeg::AddressSeg(addr),
-            DbKeySeg::StringSeg(key),
-        ] if *addr == masp() && (key == HEAD_TX_KEY || key.starts_with(TX_KEY_PREFIX)) => true,
+        [DbKeySeg::AddressSeg(addr), DbKeySeg::StringSeg(key)]
+            if *addr == masp()
+                && (key == HEAD_TX_KEY || key.starts_with(TX_KEY_PREFIX)) =>
+        {
+            true
+        }
         _ => false,
     }
 }
@@ -322,7 +325,7 @@ pub struct Transfer {
 #[derive(Error, Debug)]
 pub enum TransferError {
     #[error("Invalid address is specified: {0}")]
-    Address(AddressError),
+    Address(bech32m::DecodeError),
     #[error("Invalid amount: {0}")]
     Amount(AmountParseError),
     #[error("No token is specified")]

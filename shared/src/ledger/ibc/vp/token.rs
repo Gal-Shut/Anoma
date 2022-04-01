@@ -6,6 +6,7 @@ use std::str::FromStr;
 use borsh::BorshDeserialize;
 use thiserror::Error;
 
+use crate::bech32m;
 use crate::ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use crate::ibc::core::ics04_channel::msgs::PacketMsg;
 use crate::ibc::core::ics04_channel::packet::Packet;
@@ -13,7 +14,7 @@ use crate::ibc::core::ics26_routing::msgs::Ics26Envelope;
 use crate::ledger::native_vp::{self, Ctx, NativeVp};
 use crate::ledger::storage::{self as ledger_storage, StorageHasher};
 use crate::proto::SignedTxData;
-use crate::types::address::{Address, Error as AddressError, InternalAddress};
+use crate::types::address::{Address, InternalAddress};
 use crate::types::ibc::data::{
     Error as IbcDataError, FungibleTokenPacketData, IbcMessage,
 };
@@ -32,8 +33,8 @@ pub enum Error {
     IbcMessage(IbcDataError),
     #[error("Invalid message error")]
     InvalidMessage,
-    #[error("Invalid address error")]
-    Address(AddressError),
+    #[error("Invalid address error: {0}")]
+    Address(bech32m::DecodeError),
     #[error("Token error")]
     NoToken,
     #[error("Parsing amount error")]

@@ -11,8 +11,9 @@ use thiserror::Error;
 
 #[cfg(feature = "ferveo-tpke")]
 use super::transaction::WrapperTx;
+use crate::bech32m;
 use crate::bytes::ByteBuf;
-use crate::types::address::{self, Address, InternalAddress};
+use crate::types::address::{Address, InternalAddress};
 use crate::types::token::BALANCE_STORAGE_KEY;
 
 #[allow(missing_docs)]
@@ -21,7 +22,7 @@ pub enum Error {
     #[error("TEMPORARY error: {error}")]
     Temporary { error: String },
     #[error("Error parsing address: {0}")]
-    ParseAddress(address::Error),
+    ParseAddress(bech32m::DecodeError),
     #[error("Error parsing address from a storage key")]
     ParseAddressFromKey,
     #[error("Reserved prefix or string is specified: {0}")]

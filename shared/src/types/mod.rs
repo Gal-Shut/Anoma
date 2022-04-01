@@ -9,6 +9,7 @@ pub mod intent;
 pub mod internal;
 pub mod key;
 pub mod matchmaker;
+pub mod masp;
 pub mod nft;
 pub mod storage;
 pub mod time;

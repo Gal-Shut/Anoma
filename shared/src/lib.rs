@@ -23,6 +23,7 @@ pub use tendermint_proto_abci as tendermint_proto;
 #[cfg(feature = "ABCI")]
 pub use tendermint_stable as tendermint;
 
+pub mod bech32m;
 pub mod bytes;
 pub mod ledger;
 pub mod proto;

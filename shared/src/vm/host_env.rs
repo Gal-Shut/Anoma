@@ -12,12 +12,13 @@ use super::wasm::TxCache;
 #[cfg(feature = "wasm-runtime")]
 use super::wasm::VpCache;
 use super::WasmCacheAccess;
+use crate::bech32m;
 use crate::ledger::gas::{self, BlockGasMeter, VpGasMeter};
 use crate::ledger::storage::write_log::{self, WriteLog};
 use crate::ledger::storage::{self, Storage, StorageHasher};
 use crate::ledger::vp_env;
 use crate::proto::Tx;
-use crate::types::address::{self, Address};
+use crate::types::address::{Address};
 use crate::types::ibc::IbcEvent;
 use crate::types::internal::HostEnvResult;
 use crate::types::key::*;
@@ -58,7 +59,7 @@ pub enum TxRuntimeError {
     #[error("Encoding error: {0}")]
     EncodingError(std::io::Error),
     #[error("Address error: {0}")]
-    AddressError(address::Error),
+    AddressError(bech32m::DecodeError),
     #[error("Numeric conversion error: {0}")]
     NumConversionError(TryFromIntError),
     #[error("Memory error: {0}")]

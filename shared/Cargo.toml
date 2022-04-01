@@ -10,6 +10,8 @@ version = "0.5.0"
 
 [features]
 default = ["ABCI", "ibc-vp-abci"]
+# Conditional compliation, uses different bech32m encoding prefixes
+livenet = []
 # NOTE "dev" features that shouldn't be used in live networks are enabled by default for now
 dev = []
 ferveo-tpke = [

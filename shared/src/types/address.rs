@@ -5,14 +5,15 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::str::FromStr;
-use std::string;
 
-use bech32::{self, FromBase32, ToBase32, Variant};
+
+use bech32::{self, FromBase32, ToBase32};
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use thiserror::Error;
 
+
+use crate::bech32m;
 use crate::types::key;
 use crate::types::key::PublicKeyHash;
 
@@ -25,7 +26,6 @@ pub const ADDRESS_LEN: usize = 79 + ADDRESS_HRP.len();
 /// human-readable part of Bech32m encoded address
 // TODO use "a" for live network
 const ADDRESS_HRP: &str = "atest";
-const ADDRESS_BECH32_VARIANT: bech32::Variant = Variant::Bech32m;
 pub(crate) const HASH_LEN: usize = 40;
 
 /// An address string before bech32m encoding must be this size.
@@ -70,32 +70,6 @@ const PREFIX_IMPLICIT: &str = "imp";
 /// Fixed-length address strings prefix for internal addresses.
 const PREFIX_INTERNAL: &str = "ano";
 
-#[allow(missing_docs)]
-#[derive(Error, Debug)]
-pub enum Error {
-    #[error("Error decoding address from Bech32m: {0}")]
-    DecodeBech32(bech32::Error),
-    #[error("Error decoding address from base32: {0}")]
-    DecodeBase32(bech32::Error),
-    #[error(
-        "Unexpected Bech32m human-readable part {0}, expected {ADDRESS_HRP}"
-    )]
-    UnexpectedBech32Prefix(String),
-    #[error(
-        "Unexpected Bech32m variant {0:?}, expected {ADDRESS_BECH32_VARIANT:?}"
-    )]
-    UnexpectedBech32Variant(bech32::Variant),
-    #[error("Address must be encoded with utf-8")]
-    NonUtf8Address(string::FromUtf8Error),
-    #[error("Invalid address encoding")]
-    InvalidAddressEncoding(std::io::Error),
-    #[error("Unexpected address hash length {0}, expected {HASH_LEN}")]
-    UnexpectedHashLength(usize),
-}
-
-/// Result of a function that may fail
-pub type Result<T> = std::result::Result<T, Error>;
-
 /// An account's address
 #[derive(
     Clone,
@@ -121,7 +95,7 @@ impl Address {
     /// Encode an address with Bech32m encoding
     pub fn encode(&self) -> String {
         let bytes = self.to_fixed_len_string();
-        bech32::encode(ADDRESS_HRP, bytes.to_base32(), ADDRESS_BECH32_VARIANT)
+        bech32::encode(ADDRESS_HRP, bytes.to_base32(), bech32m::VARIANT)
             .unwrap_or_else(|_| {
                 panic!(
                     "The human-readable part {} should never cause a failure",
@@ -131,20 +105,24 @@ impl Address {
     }
 
     /// Decode an address from Bech32m encoding
-    pub fn decode(string: impl AsRef<str>) -> Result<Self> {
-        let (prefix, hash_base32, variant) =
-            bech32::decode(string.as_ref()).map_err(Error::DecodeBech32)?;
+    pub fn decode(string: impl AsRef<str>) -> bech32m::DecodeResult<Self> {
+        use bech32m::DecodeError;
+        let (prefix, hash_base32, variant) = bech32::decode(string.as_ref())
+            .map_err(DecodeError::DecodeBech32)?;
         if prefix != ADDRESS_HRP {
-            return Err(Error::UnexpectedBech32Prefix(prefix));
+            return Err(DecodeError::UnexpectedBech32Prefix(
+                prefix,
+                ADDRESS_HRP.into(),
+            ));
         }
         match variant {
-            ADDRESS_BECH32_VARIANT => {}
-            _ => return Err(Error::UnexpectedBech32Variant(variant)),
+            bech32m::VARIANT => {}
+            _ => return Err(DecodeError::UnexpectedBech32Variant(variant)),
         }
         let bytes: Vec<u8> = FromBase32::from_base32(&hash_base32)
-            .map_err(Error::DecodeBase32)?;
+            .map_err(DecodeError::DecodeBase32)?;
         Self::try_from_fixed_len_string(&mut &bytes[..])
-            .map_err(Error::InvalidAddressEncoding)
+            .map_err(DecodeError::InvalidInnerEncoding)
     }
 
     /// Try to get a raw hash of an address, only defined for established and
@@ -304,9 +282,9 @@ impl Debug for Address {
 }
 
 impl FromStr for Address {
-    type Err = Error;
+    type Err = bech32m::DecodeError;
 
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> bech32m::DecodeResult<Self> {
         Address::decode(s)
     }
 }
