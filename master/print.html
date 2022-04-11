@@ -919,9 +919,9 @@ testnet, spending keys are just arbitrary hexadecimal strings, provided
 on the command line.</p>
 <p>To try out shielded transfers, you will first need an ordinary
 transparent account with some token balance. Example commands for that:</p>
-<pre><code>anomaw address gen --alias my-implicit
-anomac init-account --source my-implicit --public-key my-implicit --alias my-established
-anomac transfer --token btc --amount 1000 --source faucet --target my-established --signer my-established
+<pre><code>./anomaw address gen --alias my-implicit
+./anomac init-account --source my-implicit --public-key my-implicit --alias my-established
+./anomac transfer --token btc --amount 1000 --source faucet --target my-established --signer my-established
 </code></pre>
 <p>The testnet tokens which the faucet can provide you are named <code>XAN</code>,
 <code>BTC</code>, <code>ETH</code>, <code>DOT</code>, <code>Schnitzel</code>, <code>Apfel</code>, and <code>Kartoffel</code>. The faucet
@@ -941,7 +941,7 @@ following along, you don't have a shielded balance to spend yet.
 <code>--target</code> may be replaced with <code>--payment-address</code> to create a shielded
 balance.</p>
 <p>To create a payment address from your spending key, use:</p>
-<pre><code>anomaw masp gen-payment-addr --spending-key [your spending key]
+<pre><code>./anomaw masp gen-payment-addr --spending-key [your spending key]
 </code></pre>
 <p>This will generate a different payment address each time you run it.
 Payment addresses can be reused or discarded as you like, and can't be
@@ -957,17 +957,17 @@ balance:</p>
 <p>However, your spending key is the secret key to all your shielded
 balances, and you may not want to use it just to view balances. For this
 purpose, you can derive the viewing key:</p>
-<pre><code>anomaw masp derive-view-key --spending-key [your spending key]
-anomac balance --viewing-key [your viewing key]
+<pre><code>./anomaw masp derive-view-key --spending-key [your spending key]
+./anomac balance --viewing-key [your viewing key]
 </code></pre>
 <p>The viewing key can also be used to generate payment addresses, with
-e.g. <code>anomaw masp gen-payment-addr --viewing-key [your viewing key]</code>.</p>
+e.g. <code>./anomaw masp gen-payment-addr --viewing-key [your viewing key]</code>.</p>
 <p>Now that you have a shielded balance, it can either be transferred to a
 different shielded payment address (shielded to shielded):</p>
-<pre><code>anomac transfer --spending-key [your spending key] --payment-address [someone's payment address] --token btc --amount 50 --signer my-established
+<pre><code>./anomac transfer --spending-key [your spending key] --payment-address [someone's payment address] --token btc --amount 50 --signer my-established
 </code></pre>
 <p>or to a transparent account (shielded to transparent):</p>
-<pre><code>anomac transfer --spending-key [your spending key] --target [some transparent account] --token btc --amount 50 --signer my-established
+<pre><code>./anomac transfer --spending-key [your spending key] --target [some transparent account] --token btc --amount 50 --signer my-established
 </code></pre>
 <p>Note that for both of these types of transfer, <code>--signer</code> must be
 specified. However, any transparent account can sign these transactions.</p>
