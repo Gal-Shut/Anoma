@@ -396,22 +396,6 @@
 <span id="395">395</span>
 <span id="396">396</span>
 <span id="397">397</span>
-<span id="398">398</span>
-<span id="399">399</span>
-<span id="400">400</span>
-<span id="401">401</span>
-<span id="402">402</span>
-<span id="403">403</span>
-<span id="404">404</span>
-<span id="405">405</span>
-<span id="406">406</span>
-<span id="407">407</span>
-<span id="408">408</span>
-<span id="409">409</span>
-<span id="410">410</span>
-<span id="411">411</span>
-<span id="412">412</span>
-<span id="413">413</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The ledger&#39;s protocol</span>
 <span class="kw">use</span> <span class="ident">std::collections::BTreeSet</span>;
 <span class="kw">use</span> <span class="ident">std::panic</span>;
@@ -426,7 +410,7 @@
 <span class="kw">use</span> <span class="ident">anoma::ledger::storage</span>::{<span class="ident">DBIter</span>, <span class="ident">Storage</span>, <span class="ident">StorageHasher</span>, <span class="ident">DB</span>};
 <span class="kw">use</span> <span class="ident">anoma::proto</span>::{<span class="self">self</span>, <span class="ident">Tx</span>};
 <span class="kw">use</span> <span class="ident">anoma::types::address</span>::{<span class="ident">Address</span>, <span class="ident">InternalAddress</span>};
-<span class="kw">use</span> <span class="ident">anoma::types::storage::Key</span>;
+<span class="kw">use</span> <span class="ident">anoma::types::storage</span>;
 <span class="kw">use</span> <span class="ident">anoma::types::transaction</span>::{<span class="ident">DecryptedTx</span>, <span class="ident">TxResult</span>, <span class="ident">TxType</span>, <span class="ident">VpsResult</span>};
 <span class="kw">use</span> <span class="ident">anoma::vm::wasm</span>::{<span class="ident">TxCache</span>, <span class="ident">VpCache</span>};
 <span class="kw">use</span> <span class="ident">anoma::vm</span>::{<span class="self">self</span>, <span class="ident">wasm</span>, <span class="ident">WasmCacheAccess</span>};
@@ -571,12 +555,6 @@
     .<span class="ident">map_err</span>(<span class="ident">Error::TxRunnerError</span>)
 }
 
-<span class="doccomment">/// A validity predicate</span>
-<span class="kw">enum</span> <span class="ident">Vp</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">Wasm</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>),
-    <span class="ident">Native</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">InternalAddress</span>),
-}
-
 <span class="doccomment">/// Check the acceptance of a transaction by validity predicates</span>
 <span class="kw">fn</span> <span class="ident">check_vps</span><span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">H</span>, <span class="ident">CA</span><span class="op">&gt;</span>(
     <span class="ident">tx</span>: <span class="kw-2">&amp;</span><span class="ident">Tx</span>,
@@ -591,39 +569,14 @@
     <span class="ident">H</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">StorageHasher</span> <span class="op">+</span> <span class="ident">Sync</span>,
     <span class="ident">CA</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">WasmCacheAccess</span> <span class="op">+</span> <span class="ident">Sync</span>,
 {
-    <span class="kw">let</span> <span class="ident">verifiers</span> <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">verifiers_changed_keys</span>(<span class="ident">verifiers_from_tx</span>);
-
-    <span class="comment">// collect the VPs for the verifiers</span>
-    <span class="kw">let</span> <span class="ident">verifiers</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Address</span>, <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Key</span><span class="op">&gt;</span>, <span class="ident">Vp</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">verifiers</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">filter</span>(<span class="op">|</span>(<span class="ident">addr</span>, <span class="kw">_</span>)<span class="op">|</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">addr</span>, <span class="ident">Address::Implicit</span>(<span class="kw">_</span>)))
-        .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">addr</span>, <span class="ident">keys</span>)<span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">vp</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">addr</span> {
-                <span class="ident">Address::Internal</span>(<span class="ident">addr</span>) =&gt; <span class="ident">Vp::Native</span>(<span class="ident">addr</span>),
-                <span class="ident">Address::Established</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="kw">let</span> (<span class="ident">vp</span>, <span class="ident">gas</span>) <span class="op">=</span> <span class="ident">storage</span>
-                        .<span class="ident">validity_predicate</span>(<span class="ident">addr</span>)
-                        .<span class="ident">map_err</span>(<span class="ident">Error::StorageError</span>)<span class="question-mark">?</span>;
-                    <span class="ident">gas_meter</span>.<span class="ident">add</span>(<span class="ident">gas</span>).<span class="ident">map_err</span>(<span class="ident">Error::GasError</span>)<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">vp</span> <span class="op">=</span>
-                        <span class="ident">vp</span>.<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">Error::MissingAddress</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()))<span class="question-mark">?</span>;
-
-                    <span class="ident">gas_meter</span>
-                        .<span class="ident">add_compiling_fee</span>(<span class="ident">vp</span>.<span class="ident">len</span>())
-                        .<span class="ident">map_err</span>(<span class="ident">Error::GasError</span>)<span class="question-mark">?</span>;
-                    <span class="ident">Vp::Wasm</span>(<span class="ident">vp</span>)
-                }
-                <span class="ident">Address::Implicit</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
-            };
-
-            <span class="prelude-val">Ok</span>((<span class="ident">addr</span>.<span class="ident">clone</span>(), <span class="ident">keys</span>.<span class="ident">clone</span>(), <span class="ident">vp</span>))
-        })
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">std::result::Result</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+    <span class="kw">let</span> (<span class="ident">verifiers</span>, <span class="ident">keys_changed</span>) <span class="op">=</span>
+        <span class="ident">write_log</span>.<span class="ident">verifiers_and_changed_keys</span>(<span class="ident">verifiers_from_tx</span>);
 
     <span class="kw">let</span> <span class="ident">initial_gas</span> <span class="op">=</span> <span class="ident">gas_meter</span>.<span class="ident">get_current_transaction_gas</span>();
 
     <span class="kw">let</span> <span class="ident">vps_result</span> <span class="op">=</span> <span class="ident">execute_vps</span>(
         <span class="ident">verifiers</span>,
+        <span class="ident">keys_changed</span>,
         <span class="ident">tx</span>,
         <span class="ident">storage</span>,
         <span class="ident">write_log</span>,
@@ -641,7 +594,8 @@
 
 <span class="doccomment">/// Execute verifiers&#39; validity predicates</span>
 <span class="kw">fn</span> <span class="ident">execute_vps</span><span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">H</span>, <span class="ident">CA</span><span class="op">&gt;</span>(
-    <span class="ident">verifiers</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Address</span>, <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Key</span><span class="op">&gt;</span>, <span class="ident">Vp</span>)<span class="op">&gt;</span>,
+    <span class="ident">verifiers</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Address</span><span class="op">&gt;</span>,
+    <span class="ident">keys_changed</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">storage::Key</span><span class="op">&gt;</span>,
     <span class="ident">tx</span>: <span class="kw-2">&amp;</span><span class="ident">Tx</span>,
     <span class="ident">storage</span>: <span class="kw-2">&amp;</span><span class="ident">Storage</span><span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">H</span><span class="op">&gt;</span>,
     <span class="ident">write_log</span>: <span class="kw-2">&amp;</span><span class="ident">WriteLog</span>,
@@ -653,30 +607,39 @@
     <span class="ident">H</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">StorageHasher</span> <span class="op">+</span> <span class="ident">Sync</span>,
     <span class="ident">CA</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">WasmCacheAccess</span> <span class="op">+</span> <span class="ident">Sync</span>,
 {
-    <span class="kw">let</span> <span class="ident">verifiers_addr</span> <span class="op">=</span> <span class="ident">verifiers</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">addr</span>, <span class="kw">_</span>, <span class="kw">_</span>)<span class="op">|</span> <span class="ident">addr</span>)
-        .<span class="ident">cloned</span>()
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-
     <span class="ident">verifiers</span>
         .<span class="ident">par_iter</span>()
-        .<span class="ident">try_fold</span>(<span class="ident">VpsResult::default</span>, <span class="op">|</span><span class="kw-2">mut</span> <span class="ident">result</span>, (<span class="ident">addr</span>, <span class="ident">keys</span>, <span class="ident">vp</span>)<span class="op">|</span> {
+        <span class="comment">// TODO temporary pending on &lt;https://github.com/anoma/anoma/issues/193&gt;</span>
+        .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">addr</span><span class="op">|</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">addr</span>, <span class="ident">Address::Implicit</span>(<span class="kw">_</span>)))
+        .<span class="ident">try_fold</span>(<span class="ident">VpsResult::default</span>, <span class="op">|</span><span class="kw-2">mut</span> <span class="ident">result</span>, <span class="ident">addr</span><span class="op">|</span> {
             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">gas_meter</span> <span class="op">=</span> <span class="ident">VpGasMeter::new</span>(<span class="ident">initial_gas</span>);
-            <span class="kw">let</span> <span class="ident">accept</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">vp</span> {
-                <span class="ident">Vp::Wasm</span>(<span class="ident">vp</span>) =&gt; <span class="ident">wasm::run::vp</span>(
-                    <span class="ident">vp</span>,
-                    <span class="ident">tx</span>,
-                    <span class="ident">addr</span>,
-                    <span class="ident">storage</span>,
-                    <span class="ident">write_log</span>,
-                    <span class="kw-2">&amp;mut</span> <span class="ident">gas_meter</span>,
-                    <span class="ident">keys</span>,
-                    <span class="kw-2">&amp;</span><span class="ident">verifiers_addr</span>,
-                    <span class="ident">vp_wasm_cache</span>.<span class="ident">clone</span>(),
-                )
-                .<span class="ident">map_err</span>(<span class="ident">Error::VpRunnerError</span>),
-                <span class="ident">Vp::Native</span>(<span class="ident">internal_addr</span>) =&gt; {
+            <span class="kw">let</span> <span class="ident">accept</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">addr</span> {
+                <span class="ident">Address::Established</span>(<span class="kw">_</span>) =&gt; {
+                    <span class="kw">let</span> (<span class="ident">vp</span>, <span class="ident">gas</span>) <span class="op">=</span> <span class="ident">storage</span>
+                        .<span class="ident">validity_predicate</span>(<span class="ident">addr</span>)
+                        .<span class="ident">map_err</span>(<span class="ident">Error::StorageError</span>)<span class="question-mark">?</span>;
+                    <span class="ident">gas_meter</span>.<span class="ident">add</span>(<span class="ident">gas</span>).<span class="ident">map_err</span>(<span class="ident">Error::GasError</span>)<span class="question-mark">?</span>;
+                    <span class="kw">let</span> <span class="ident">vp</span> <span class="op">=</span>
+                        <span class="ident">vp</span>.<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">Error::MissingAddress</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()))<span class="question-mark">?</span>;
+
+                    <span class="ident">gas_meter</span>
+                        .<span class="ident">add_compiling_fee</span>(<span class="ident">vp</span>.<span class="ident">len</span>())
+                        .<span class="ident">map_err</span>(<span class="ident">Error::GasError</span>)<span class="question-mark">?</span>;
+
+                    <span class="ident">wasm::run::vp</span>(
+                        <span class="ident">vp</span>,
+                        <span class="ident">tx</span>,
+                        <span class="ident">addr</span>,
+                        <span class="ident">storage</span>,
+                        <span class="ident">write_log</span>,
+                        <span class="kw-2">&amp;mut</span> <span class="ident">gas_meter</span>,
+                        <span class="kw-2">&amp;</span><span class="ident">keys_changed</span>,
+                        <span class="kw-2">&amp;</span><span class="ident">verifiers</span>,
+                        <span class="ident">vp_wasm_cache</span>.<span class="ident">clone</span>(),
+                    )
+                    .<span class="ident">map_err</span>(<span class="ident">Error::VpRunnerError</span>)
+                }
+                <span class="ident">Address::Internal</span>(<span class="ident">internal_addr</span>) =&gt; {
                     <span class="kw">let</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">native_vp::Ctx::new</span>(
                         <span class="ident">storage</span>,
                         <span class="ident">write_log</span>,
@@ -692,17 +655,18 @@
                     <span class="kw">let</span> <span class="ident">accepted</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">internal_addr</span> {
                         <span class="ident">InternalAddress::PoS</span> =&gt; {
                             <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">PosVP</span> { <span class="ident">ctx</span> };
-                            <span class="kw">let</span> <span class="ident">verifiers_addr_ref</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">verifiers_addr</span>;
+                            <span class="kw">let</span> <span class="ident">verifiers_addr_ref</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">verifiers</span>;
                             <span class="kw">let</span> <span class="ident">pos_ref</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">pos</span>;
                             <span class="comment">// TODO this is temporarily ran in a new thread to</span>
                             <span class="comment">// avoid crashing the ledger (required `UnwindSafe`</span>
                             <span class="comment">// and `RefUnwindSafe` in</span>
                             <span class="comment">// shared/src/ledger/pos/vp.rs)</span>
+                            <span class="kw">let</span> <span class="ident">keys_changed_ref</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">keys_changed</span>;
                             <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">panic::catch_unwind</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
                                 <span class="ident">pos_ref</span>
                                     .<span class="ident">validate_tx</span>(
                                         <span class="ident">tx_data</span>,
-                                        <span class="ident">keys</span>,
+                                        <span class="ident">keys_changed_ref</span>,
                                         <span class="ident">verifiers_addr_ref</span>,
                                     )
                                     .<span class="ident">map_err</span>(<span class="ident">Error::PosNativeVpError</span>)
@@ -723,7 +687,7 @@
                         <span class="ident">InternalAddress::Ibc</span> =&gt; {
                             <span class="kw">let</span> <span class="ident">ibc</span> <span class="op">=</span> <span class="ident">Ibc</span> { <span class="ident">ctx</span> };
                             <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">ibc</span>
-                                .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="ident">keys</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers_addr</span>)
+                                .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="kw-2">&amp;</span><span class="ident">keys_changed</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers</span>)
                                 .<span class="ident">map_err</span>(<span class="ident">Error::IbcNativeVpError</span>);
                             <span class="comment">// Take the gas meter back out of the context</span>
                             <span class="ident">gas_meter</span> <span class="op">=</span> <span class="ident">ibc</span>.<span class="ident">ctx</span>.<span class="ident">gas_meter</span>.<span class="ident">into_inner</span>();
@@ -732,7 +696,7 @@
                         <span class="ident">InternalAddress::Parameters</span> =&gt; {
                             <span class="kw">let</span> <span class="ident">parameters</span> <span class="op">=</span> <span class="ident">ParametersVp</span> { <span class="ident">ctx</span> };
                             <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">parameters</span>
-                                .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="ident">keys</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers_addr</span>)
+                                .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="kw-2">&amp;</span><span class="ident">keys_changed</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers</span>)
                                 .<span class="ident">map_err</span>(<span class="ident">Error::ParametersNativeVpError</span>);
                             <span class="comment">// Take the gas meter back out of the context</span>
                             <span class="ident">gas_meter</span> <span class="op">=</span> <span class="ident">parameters</span>.<span class="ident">ctx</span>.<span class="ident">gas_meter</span>.<span class="ident">into_inner</span>();
@@ -748,7 +712,7 @@
                         <span class="ident">InternalAddress::Governance</span> =&gt; {
                             <span class="kw">let</span> <span class="ident">governance</span> <span class="op">=</span> <span class="ident">GovernanceVp</span> { <span class="ident">ctx</span> };
                             <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">governance</span>
-                                .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="ident">keys</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers_addr</span>)
+                                .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="kw-2">&amp;</span><span class="ident">keys_changed</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers</span>)
                                 .<span class="ident">map_err</span>(<span class="ident">Error::GovernanceNativeVpError</span>);
                             <span class="ident">gas_meter</span> <span class="op">=</span> <span class="ident">governance</span>.<span class="ident">ctx</span>.<span class="ident">gas_meter</span>.<span class="ident">into_inner</span>();
                             <span class="ident">result</span>
@@ -759,7 +723,7 @@
                             <span class="comment">// validate the transfer</span>
                             <span class="kw">let</span> <span class="ident">ibc_token</span> <span class="op">=</span> <span class="ident">IbcToken</span> { <span class="ident">ctx</span> };
                             <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">ibc_token</span>
-                                .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="ident">keys</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers_addr</span>)
+                                .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="kw-2">&amp;</span><span class="ident">keys_changed</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers</span>)
                                 .<span class="ident">map_err</span>(<span class="ident">Error::IbcTokenNativeVpError</span>);
                             <span class="ident">gas_meter</span> <span class="op">=</span> <span class="ident">ibc_token</span>.<span class="ident">ctx</span>.<span class="ident">gas_meter</span>.<span class="ident">into_inner</span>();
                             <span class="ident">result</span>
@@ -768,6 +732,8 @@
 
                     <span class="ident">accepted</span>
                 }
+                <span class="comment">// TODO temporary pending on &lt;https://github.com/anoma/anoma/issues/193&gt;</span>
+                <span class="ident">Address::Implicit</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
             };
 
             <span class="comment">// Returning error from here will short-circuit the VP parallel</span>
@@ -804,8 +770,10 @@
     <span class="kw-2">mut</span> <span class="ident">b</span>: <span class="ident">VpsResult</span>,
     <span class="ident">initial_gas</span>: <span class="ident">u64</span>,
 ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">VpsResult</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">accepted_vps</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">accepted_vps</span>.<span class="ident">union</span>(<span class="kw-2">&amp;</span><span class="ident">b</span>.<span class="ident">accepted_vps</span>).<span class="ident">cloned</span>().<span class="ident">collect</span>();
-    <span class="kw">let</span> <span class="ident">rejected_vps</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">rejected_vps</span>.<span class="ident">union</span>(<span class="kw-2">&amp;</span><span class="ident">b</span>.<span class="ident">rejected_vps</span>).<span class="ident">cloned</span>().<span class="ident">collect</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">accepted_vps</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">accepted_vps</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rejected_vps</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">rejected_vps</span>;
+    <span class="ident">accepted_vps</span>.<span class="ident">extend</span>(<span class="ident">b</span>.<span class="ident">accepted_vps</span>);
+    <span class="ident">rejected_vps</span>.<span class="ident">extend</span>(<span class="ident">b</span>.<span class="ident">rejected_vps</span>);
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">errors</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">errors</span>;
     <span class="ident">errors</span>.<span class="ident">append</span>(<span class="kw-2">&amp;mut</span> <span class="ident">b</span>.<span class="ident">errors</span>);
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">gas_used</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">gas_used</span>;

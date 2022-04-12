@@ -715,21 +715,6 @@
 <span id="714">714</span>
 <span id="715">715</span>
 <span id="716">716</span>
-<span id="717">717</span>
-<span id="718">718</span>
-<span id="719">719</span>
-<span id="720">720</span>
-<span id="721">721</span>
-<span id="722">722</span>
-<span id="723">723</span>
-<span id="724">724</span>
-<span id="725">725</span>
-<span id="726">726</span>
-<span id="727">727</span>
-<span id="728">728</span>
-<span id="729">729</span>
-<span id="730">730</span>
-<span id="731">731</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Write log is temporary storage for modifications performed by a transaction.</span>
 <span class="doccomment">//! before they are committed to the ledger&#39;s storage.</span>
 
@@ -737,16 +722,17 @@
 
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger::storage</span>::{<span class="self">self</span>, <span class="ident">Storage</span>, <span class="ident">StorageHasher</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger::storage</span>::{<span class="ident">Storage</span>, <span class="ident">StorageHasher</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::address</span>::{<span class="ident">Address</span>, <span class="ident">EstablishedAddressGen</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::ibc::IbcEvent</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::storage::Key</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::storage</span>;
 
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">missing_docs</span>)]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Error</span> {
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Storage error applying a write log: {0}&quot;</span>)]</span>
-    <span class="ident">StorageError</span>(<span class="ident">storage::Error</span>),
+    <span class="ident">StorageError</span>(<span class="ident">ledger::storage::Error</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Trying to update a temporary value&quot;</span>)]</span>
     <span class="ident">UpdateTemporaryValue</span>,
     <span class="attribute">#[<span class="ident">error</span>(
@@ -795,9 +781,9 @@
     <span class="ident">address_gen</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">EstablishedAddressGen</span><span class="op">&gt;</span>,
     <span class="doccomment">/// All the storage modification accepted by validity predicates are stored</span>
     <span class="doccomment">/// in block write-log, before being committed to the storage</span>
-    <span class="ident">block_write_log</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Key</span>, <span class="ident">StorageModification</span><span class="op">&gt;</span>,
+    <span class="ident">block_write_log</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">storage::Key</span>, <span class="ident">StorageModification</span><span class="op">&gt;</span>,
     <span class="doccomment">/// The storage modifications for the current transaction</span>
-    <span class="ident">tx_write_log</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Key</span>, <span class="ident">StorageModification</span><span class="op">&gt;</span>,
+    <span class="ident">tx_write_log</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">storage::Key</span>, <span class="ident">StorageModification</span><span class="op">&gt;</span>,
     <span class="doccomment">/// The IBC event for the current transaction</span>
     <span class="ident">ibc_event</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IbcEvent</span><span class="op">&gt;</span>,
 }
@@ -816,7 +802,10 @@
 <span class="kw">impl</span> <span class="ident">WriteLog</span> {
     <span class="doccomment">/// Read a value at the given key and return the value and the gas cost,</span>
     <span class="doccomment">/// returns [`None`] if the key is not present in the write log</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">Key</span>) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">StorageModification</span><span class="op">&gt;</span>, <span class="ident">u64</span>) {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">storage::Key</span>,
+    ) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">StorageModification</span><span class="op">&gt;</span>, <span class="ident">u64</span>) {
         <span class="comment">// try to read from tx write log first</span>
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">tx_write_log</span>.<span class="ident">get</span>(<span class="ident">key</span>).<span class="ident">or_else</span>(<span class="op">|</span><span class="op">|</span> {
             <span class="comment">// if not found, then try to read from block write log</span>
@@ -846,7 +835,11 @@
     <span class="doccomment">/// validity predicate of a new account that&#39;s not yet committed to storage.</span>
     <span class="doccomment">/// Fails with [`Error::UpdateTemporaryValue`] when attempting to update a</span>
     <span class="doccomment">/// temporary value.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">Key</span>, <span class="ident">value</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">i64</span>)<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span>(
+        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
+        <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">storage::Key</span>,
+        <span class="ident">value</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">i64</span>)<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">value</span>.<span class="ident">len</span>();
         <span class="kw">let</span> <span class="ident">gas</span> <span class="op">=</span> <span class="ident">key</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="ident">len</span>;
         <span class="kw">let</span> <span class="ident">size_diff</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>
@@ -879,7 +872,7 @@
     <span class="doccomment">/// temporary value after deleting.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_temp</span>(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">Key</span>,
+        <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">storage::Key</span>,
         <span class="ident">value</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">i64</span>)<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">value</span>.<span class="ident">len</span>();
@@ -913,7 +906,7 @@
     <span class="doccomment">/// difference.</span>
     <span class="doccomment">/// Fails with [`Error::DeleteVp`] for a validity predicate key, which are</span>
     <span class="doccomment">/// not possible to delete.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">delete</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">Key</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">i64</span>)<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">delete</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">storage::Key</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">i64</span>)<span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="ident">key</span>.<span class="ident">is_validity_predicate</span>().<span class="ident">is_some</span>() {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::DeleteVp</span>);
         }
@@ -949,7 +942,7 @@
             <span class="self">self</span>.<span class="ident">address_gen</span>.<span class="ident">get_or_insert</span>(<span class="ident">storage_address_gen</span>.<span class="ident">clone</span>());
         <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span>
             <span class="ident">address_gen</span>.<span class="ident">generate_address</span>(<span class="string">&quot;TODO more randomness&quot;</span>.<span class="ident">as_bytes</span>());
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
+        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">storage::Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
         <span class="kw">let</span> <span class="ident">gas</span> <span class="op">=</span> (<span class="ident">key</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="ident">vp</span>.<span class="ident">len</span>()) <span class="kw">as</span> <span class="kw">_</span>;
         <span class="self">self</span>.<span class="ident">tx_write_log</span>
             .<span class="ident">insert</span>(<span class="ident">key</span>, <span class="ident">StorageModification::InitAccount</span> { <span class="ident">vp</span> });
@@ -969,7 +962,7 @@
     <span class="doccomment">/// Get the storage keys changed and accounts keys initialized in the</span>
     <span class="doccomment">/// current transaction. The account keys point to the validity predicates</span>
     <span class="doccomment">/// of the newly created accounts.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Key</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">storage::Key</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">tx_write_log</span>.<span class="ident">keys</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>()
     }
 
@@ -978,7 +971,9 @@
     <span class="doccomment">/// (right). The first vector excludes keys of validity predicates of</span>
     <span class="doccomment">/// newly initialized accounts, but may include keys of other data</span>
     <span class="doccomment">/// written into newly initialized accounts.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_partitioned_keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Key</span><span class="op">&gt;</span>, <span class="ident">HashSet</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Address</span><span class="op">&gt;</span>) {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_partitioned_keys</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; (<span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">storage::Key</span><span class="op">&gt;</span>, <span class="ident">HashSet</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Address</span><span class="op">&gt;</span>) {
         <span class="kw">use</span> <span class="ident">itertools</span>::{<span class="ident">Either</span>, <span class="ident">Itertools</span>};
         <span class="self">self</span>.<span class="ident">tx_write_log</span>.<span class="ident">iter</span>().<span class="ident">partition_map</span>(<span class="op">|</span>(<span class="ident">key</span>, <span class="ident">value</span>)<span class="op">|</span> {
             <span class="kw">match</span> (<span class="ident">key</span>.<span class="ident">is_validity_predicate</span>(), <span class="ident">value</span>) {
@@ -1040,7 +1035,9 @@
         <span class="ident">storage</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Storage</span><span class="op">&lt;</span><span class="ident">DB</span>, <span class="ident">H</span><span class="op">&gt;</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">DB</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">storage::DB</span> <span class="op">+</span> <span class="kw">for</span><span class="op">&lt;</span><span class="lifetime">&#39;iter</span><span class="op">&gt;</span> <span class="ident">storage::DBIter</span><span class="op">&lt;</span><span class="lifetime">&#39;iter</span><span class="op">&gt;</span>,
+        <span class="ident">DB</span>: <span class="lifetime">&#39;static</span>
+            <span class="op">+</span> <span class="ident">ledger::storage::DB</span>
+            <span class="op">+</span> <span class="kw">for</span><span class="op">&lt;</span><span class="lifetime">&#39;iter</span><span class="op">&gt;</span> <span class="ident">ledger::storage::DBIter</span><span class="op">&lt;</span><span class="lifetime">&#39;iter</span><span class="op">&gt;</span>,
         <span class="ident">H</span>: <span class="ident">StorageHasher</span>,
     {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">batch</span> <span class="op">=</span> <span class="ident">Storage</span>::<span class="op">&lt;</span><span class="ident">DB</span>, <span class="ident">H</span><span class="op">&gt;</span><span class="ident">::batch</span>();
@@ -1081,64 +1078,40 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Get the storage keys that have been changed in the write log, grouped by</span>
-    <span class="doccomment">/// their verifiers, whose VPs will be triggered by the changes.</span>
+    <span class="doccomment">/// Get the verifiers set whose validity predicates should validate the</span>
+    <span class="doccomment">/// current transaction changes and the storage keys that have been</span>
+    <span class="doccomment">/// modified created, updated and deleted via the write log.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Note that some storage keys may comprise of multiple addresses, in which</span>
-    <span class="doccomment">/// case every address will be the verifier of the key.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verifiers_changed_keys</span>(
+    <span class="doccomment">/// case every address will be included in the verifiers set.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verifiers_and_changed_keys</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">verifiers_from_tx</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Address</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Address</span>, <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Key</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">changed_keys</span>, <span class="ident">initialized_accounts</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_partitioned_keys</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">verifiers</span> <span class="op">=</span>
-            <span class="ident">verifiers_from_tx</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">fold</span>(<span class="ident">HashMap::new</span>(), <span class="op">|</span><span class="kw-2">mut</span> <span class="ident">acc</span>, <span class="ident">addr</span><span class="op">|</span> {
-                    <span class="kw">let</span> <span class="ident">changed_keys</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Key</span><span class="op">&gt;</span> <span class="op">=</span>
-                        <span class="ident">changed_keys</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">key</span><span class="op">|</span> <span class="ident">key</span>.<span class="ident">clone</span>()).<span class="ident">collect</span>();
-                    <span class="ident">acc</span>.<span class="ident">insert</span>(<span class="ident">addr</span>.<span class="ident">clone</span>(), <span class="ident">changed_keys</span>);
-                    <span class="ident">acc</span>
-                });
+    ) -&gt; (<span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Address</span><span class="op">&gt;</span>, <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">storage::Key</span><span class="op">&gt;</span>) {
+        <span class="kw">let</span> <span class="ident">changed_keys</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">storage::Key</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_keys</span>();
+        <span class="kw">let</span> <span class="ident">initialized_accounts</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_initialized_accounts</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">verifiers</span> <span class="op">=</span> <span class="ident">verifiers_from_tx</span>.<span class="ident">clone</span>();
 
         <span class="comment">// get changed keys grouped by the address</span>
-        <span class="kw">for</span> <span class="ident">key</span> <span class="kw">in</span> <span class="ident">changed_keys</span> {
+        <span class="kw">for</span> <span class="ident">key</span> <span class="kw">in</span> <span class="ident">changed_keys</span>.<span class="ident">iter</span>() {
             <span class="kw">for</span> <span class="ident">addr</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">key</span>.<span class="ident">find_addresses</span>() {
                 <span class="kw">if</span> <span class="ident">verifiers_from_tx</span>.<span class="ident">contains</span>(<span class="ident">addr</span>)
                     <span class="op">|</span><span class="op">|</span> <span class="ident">initialized_accounts</span>.<span class="ident">contains</span>(<span class="ident">addr</span>)
                 {
                     <span class="comment">// We can skip this when the address has been added from the</span>
-                    <span class="comment">// Tx above, which associates with this address all the</span>
-                    <span class="comment">// changed storage keys, even if their address is not</span>
-                    <span class="comment">// included in the key.</span>
+                    <span class="comment">// Tx above.</span>
                     <span class="comment">// Also skip if it&#39;s an address of a newly initialized</span>
                     <span class="comment">// account, because anything can be written into an</span>
                     <span class="comment">// account&#39;s storage in the same tx in which it&#39;s</span>
-                    <span class="comment">// initialized.</span>
+                    <span class="comment">// initialized (there is no VP in the state prior to tx</span>
+                    <span class="comment">// execution).</span>
                     <span class="kw">continue</span>;
                 }
                 <span class="comment">// Add the address as a verifier</span>
-                <span class="kw">match</span> <span class="ident">verifiers</span>.<span class="ident">get_mut</span>(<span class="ident">addr</span>) {
-                    <span class="prelude-val">Some</span>(<span class="ident">keys</span>) =&gt; {
-                        <span class="ident">keys</span>.<span class="ident">insert</span>(<span class="ident">key</span>.<span class="ident">clone</span>());
-                    }
-                    <span class="prelude-val">None</span> =&gt; {
-                        <span class="kw">let</span> <span class="ident">keys</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Key</span><span class="op">&gt;</span> <span class="op">=</span>
-                            <span class="macro">vec!</span>[<span class="ident">key</span>.<span class="ident">clone</span>()].<span class="ident">into_iter</span>().<span class="ident">collect</span>();
-                        <span class="ident">verifiers</span>.<span class="ident">insert</span>(<span class="ident">addr</span>.<span class="ident">clone</span>(), <span class="ident">keys</span>);
-                    }
-                }
+                <span class="ident">verifiers</span>.<span class="ident">insert</span>(<span class="ident">addr</span>.<span class="ident">clone</span>());
             }
         }
-        <span class="comment">// The new accounts should be validated by every verifier&#39;s VP</span>
-        <span class="kw">for</span> <span class="ident">initialized_account</span> <span class="kw">in</span> <span class="ident">initialized_accounts</span> {
-            <span class="kw">for</span> (<span class="ident">_verifier</span>, <span class="ident">keys</span>) <span class="kw">in</span> <span class="ident">verifiers</span>.<span class="ident">iter_mut</span>() {
-                <span class="comment">// The key for an initialized account points to its VP</span>
-                <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">Key::validity_predicate</span>(<span class="ident">initialized_account</span>);
-                <span class="ident">keys</span>.<span class="ident">insert</span>(<span class="ident">vp_key</span>);
-            }
-        }
-        <span class="ident">verifiers</span>
+        (<span class="ident">verifiers</span>, <span class="ident">changed_keys</span>)
     }
 }
 
@@ -1148,12 +1121,13 @@
     <span class="kw">use</span> <span class="ident">proptest::prelude</span>::<span class="kw-2">*</span>;
 
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::address</span>;
+    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::{<span class="ident">address</span>, <span class="ident">storage</span>};
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_crud_value</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">write_log</span> <span class="op">=</span> <span class="ident">WriteLog::default</span>();
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">Key::parse</span>(<span class="string">&quot;key&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
+        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span>
+            <span class="ident">storage::Key::parse</span>(<span class="string">&quot;key&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
 
         <span class="comment">// read a non-existing key</span>
         <span class="kw">let</span> (<span class="ident">value</span>, <span class="ident">gas</span>) <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">read</span>(<span class="kw-2">&amp;</span><span class="ident">key</span>);
@@ -1220,7 +1194,7 @@
         <span class="comment">// init</span>
         <span class="kw">let</span> <span class="ident">init_vp</span> <span class="op">=</span> <span class="string">&quot;initialized&quot;</span>.<span class="ident">as_bytes</span>().<span class="ident">to_vec</span>();
         <span class="kw">let</span> (<span class="ident">addr</span>, <span class="ident">gas</span>) <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">init_account</span>(<span class="kw-2">&amp;</span><span class="ident">address_gen</span>, <span class="ident">init_vp</span>.<span class="ident">clone</span>());
-        <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
+        <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">storage::Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
         <span class="macro">assert_eq!</span>(<span class="ident">gas</span>, (<span class="ident">vp_key</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="ident">init_vp</span>.<span class="ident">len</span>()) <span class="kw">as</span> <span class="ident">u64</span>);
 
         <span class="comment">// read</span>
@@ -1244,7 +1218,7 @@
 
         <span class="kw">let</span> <span class="ident">init_vp</span> <span class="op">=</span> <span class="string">&quot;initialized&quot;</span>.<span class="ident">as_bytes</span>().<span class="ident">to_vec</span>();
         <span class="kw">let</span> (<span class="ident">addr</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">init_account</span>(<span class="kw-2">&amp;</span><span class="ident">address_gen</span>, <span class="ident">init_vp</span>);
-        <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
+        <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">storage::Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
 
         <span class="comment">// update should fail</span>
         <span class="kw">let</span> <span class="ident">updated_vp</span> <span class="op">=</span> <span class="string">&quot;updated&quot;</span>.<span class="ident">as_bytes</span>().<span class="ident">to_vec</span>();
@@ -1259,7 +1233,7 @@
 
         <span class="kw">let</span> <span class="ident">init_vp</span> <span class="op">=</span> <span class="string">&quot;initialized&quot;</span>.<span class="ident">as_bytes</span>().<span class="ident">to_vec</span>();
         <span class="kw">let</span> (<span class="ident">addr</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">init_account</span>(<span class="kw-2">&amp;</span><span class="ident">address_gen</span>, <span class="ident">init_vp</span>);
-        <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
+        <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">storage::Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
 
         <span class="comment">// delete should fail</span>
         <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">delete</span>(<span class="kw-2">&amp;</span><span class="ident">vp_key</span>).<span class="ident">unwrap_err</span>();
@@ -1270,7 +1244,7 @@
     <span class="kw">fn</span> <span class="ident">test_delete_vp_should_fail</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">write_log</span> <span class="op">=</span> <span class="ident">WriteLog::default</span>();
         <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">address::testing::established_address_1</span>();
-        <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
+        <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">storage::Key::validity_predicate</span>(<span class="kw-2">&amp;</span><span class="ident">addr</span>);
 
         <span class="comment">// delete should fail</span>
         <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">delete</span>(<span class="kw-2">&amp;</span><span class="ident">vp_key</span>).<span class="ident">unwrap_err</span>();
@@ -1284,10 +1258,14 @@
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">write_log</span> <span class="op">=</span> <span class="ident">WriteLog::default</span>();
         <span class="kw">let</span> <span class="ident">address_gen</span> <span class="op">=</span> <span class="ident">EstablishedAddressGen::new</span>(<span class="string">&quot;test&quot;</span>);
 
-        <span class="kw">let</span> <span class="ident">key1</span> <span class="op">=</span> <span class="ident">Key::parse</span>(<span class="string">&quot;key1&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
-        <span class="kw">let</span> <span class="ident">key2</span> <span class="op">=</span> <span class="ident">Key::parse</span>(<span class="string">&quot;key2&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
-        <span class="kw">let</span> <span class="ident">key3</span> <span class="op">=</span> <span class="ident">Key::parse</span>(<span class="string">&quot;key3&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
-        <span class="kw">let</span> <span class="ident">key4</span> <span class="op">=</span> <span class="ident">Key::parse</span>(<span class="string">&quot;key4&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
+        <span class="kw">let</span> <span class="ident">key1</span> <span class="op">=</span>
+            <span class="ident">storage::Key::parse</span>(<span class="string">&quot;key1&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
+        <span class="kw">let</span> <span class="ident">key2</span> <span class="op">=</span>
+            <span class="ident">storage::Key::parse</span>(<span class="string">&quot;key2&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
+        <span class="kw">let</span> <span class="ident">key3</span> <span class="op">=</span>
+            <span class="ident">storage::Key::parse</span>(<span class="string">&quot;key3&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
+        <span class="kw">let</span> <span class="ident">key4</span> <span class="op">=</span>
+            <span class="ident">storage::Key::parse</span>(<span class="string">&quot;key4&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;cannot parse the key string&quot;</span>);
 
         <span class="comment">// initialize an account</span>
         <span class="kw">let</span> <span class="ident">vp1</span> <span class="op">=</span> <span class="string">&quot;vp1&quot;</span>.<span class="ident">as_bytes</span>().<span class="ident">to_vec</span>();
@@ -1336,63 +1314,55 @@
             (<span class="ident">verifiers_from_tx</span> <span class="kw">in</span> <span class="ident">testing::arb_verifiers_from_tx</span>())
             (<span class="ident">tx_write_log</span> <span class="kw">in</span> <span class="ident">testing::arb_tx_write_log</span>(<span class="ident">verifiers_from_tx</span>.<span class="ident">clone</span>()),
                 <span class="ident">verifiers_from_tx</span> <span class="kw">in</span> <span class="ident">Just</span>(<span class="ident">verifiers_from_tx</span>))
-        -&gt; (<span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Address</span><span class="op">&gt;</span>, <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Key</span>, <span class="ident">StorageModification</span><span class="op">&gt;</span>) {
+        -&gt; (<span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Address</span><span class="op">&gt;</span>, <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">storage::Key</span>, <span class="ident">StorageModification</span><span class="op">&gt;</span>) {
             (<span class="ident">verifiers_from_tx</span>, <span class="ident">tx_write_log</span>)
         }
     }
 
     <span class="macro">proptest!</span> {
         <span class="doccomment">/// Test [`WriteLog::verifiers_changed_keys`] that:</span>
-        <span class="doccomment">/// 1. Every address from `verifiers_from_tx` is associated with all the</span>
-        <span class="doccomment">///    changed storage keys.</span>
-        <span class="doccomment">/// 2. Every changed storage key is associated with all the addresses</span>
-        <span class="doccomment">///    included in the key except for the addresses of newly</span>
-        <span class="doccomment">///    initialized accounts.</span>
+        <span class="doccomment">/// 1. Every address from `verifiers_from_tx` is included in the</span>
+        <span class="doccomment">///    verifiers set.</span>
+        <span class="doccomment">/// 2. Every address included in the changed storage keys is included in</span>
+        <span class="doccomment">///    the verifiers set.</span>
         <span class="doccomment">/// 3. Addresses of newly initialized accounts are not verifiers, so</span>
         <span class="doccomment">///    that anything can be written into an account&#39;s storage in the</span>
         <span class="doccomment">///    same tx in which it&#39;s initialized.</span>
-        <span class="doccomment">/// 4. Every address is associated with all the newly initialized</span>
-        <span class="doccomment">///    accounts keys to their validity predicates.</span>
+        <span class="doccomment">/// 4. The validity predicates of all the newly initialized accounts are</span>
+        <span class="doccomment">///    included in the changed keys set.</span>
         <span class="attribute">#[<span class="ident">test</span>]</span>
         <span class="kw">fn</span> <span class="ident">verifiers_changed_key_tx_all_key</span>(
             (<span class="ident">verifiers_from_tx</span>, <span class="ident">tx_write_log</span>) <span class="kw">in</span> <span class="ident">arb_verifiers_changed_key_tx_all_key</span>(),
         ) {
             <span class="kw">let</span> <span class="ident">write_log</span> <span class="op">=</span> <span class="ident">WriteLog</span> { <span class="ident">tx_write_log</span>, ..<span class="ident">WriteLog::default</span>() };
-            <span class="kw">let</span> <span class="ident">all_keys</span> <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">get_keys</span>();
 
-            <span class="kw">let</span> <span class="ident">verifiers_changed_keys</span> <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">verifiers_changed_keys</span>(<span class="kw-2">&amp;</span><span class="ident">verifiers_from_tx</span>);
+            <span class="kw">let</span> (<span class="ident">verifiers</span>, <span class="ident">changed_keys</span>) <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">verifiers_and_changed_keys</span>(<span class="kw-2">&amp;</span><span class="ident">verifiers_from_tx</span>);
 
             <span class="macro">println!</span>(<span class="string">&quot;verifiers_from_tx {:#?}&quot;</span>, <span class="ident">verifiers_from_tx</span>);
             <span class="kw">for</span> <span class="ident">verifier_from_tx</span> <span class="kw">in</span> <span class="ident">verifiers_from_tx</span> {
-                <span class="macro">assert!</span>(<span class="ident">verifiers_changed_keys</span>.<span class="ident">contains_key</span>(<span class="kw-2">&amp;</span><span class="ident">verifier_from_tx</span>));
-                <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">verifiers_changed_keys</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">verifier_from_tx</span>).<span class="ident">unwrap</span>().<span class="ident">clone</span>();
                 <span class="comment">// Test for 1.</span>
-                <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span><span class="ident">keys</span>, <span class="kw-2">&amp;</span><span class="ident">all_keys</span>);
+                <span class="macro">assert!</span>(<span class="ident">verifiers</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">verifier_from_tx</span>));
             }
 
             <span class="kw">let</span> (<span class="ident">_changed_keys</span>, <span class="ident">initialized_accounts</span>) <span class="op">=</span> <span class="ident">write_log</span>.<span class="ident">get_partitioned_keys</span>();
-            <span class="kw">for</span> (<span class="ident">_verifier_addr</span>, <span class="ident">keys</span>) <span class="kw">in</span> <span class="ident">verifiers_changed_keys</span>.<span class="ident">iter</span>() {
-                <span class="kw">for</span> <span class="ident">key</span> <span class="kw">in</span> <span class="ident">keys</span> {
+            <span class="kw">for</span> <span class="ident">key</span> <span class="kw">in</span> <span class="ident">changed_keys</span>.<span class="ident">iter</span>() {
                     <span class="kw">for</span> <span class="ident">addr_from_key</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">key</span>.<span class="ident">find_addresses</span>() {
                         <span class="kw">if</span> <span class="op">!</span><span class="ident">initialized_accounts</span>.<span class="ident">contains</span>(<span class="ident">addr_from_key</span>) {
-                            <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">verifiers_changed_keys</span>.<span class="ident">get</span>(<span class="ident">addr_from_key</span>).<span class="ident">unwrap</span>();
                             <span class="comment">// Test for 2.</span>
-                            <span class="macro">assert!</span>(<span class="ident">keys</span>.<span class="ident">contains</span>(<span class="ident">key</span>));
+                            <span class="macro">assert!</span>(<span class="ident">verifiers</span>.<span class="ident">contains</span>(<span class="ident">addr_from_key</span>));
                         }
                     }
-                }
             }
 
-            <span class="macro">println!</span>(<span class="string">&quot;verifiers_changed_keys {:#?}&quot;</span>, <span class="ident">verifiers_changed_keys</span>);
+            <span class="macro">println!</span>(<span class="string">&quot;verifiers {:#?}&quot;</span>, <span class="ident">verifiers</span>);
+            <span class="macro">println!</span>(<span class="string">&quot;changed_keys {:#?}&quot;</span>, <span class="ident">changed_keys</span>);
             <span class="macro">println!</span>(<span class="string">&quot;initialized_accounts {:#?}&quot;</span>, <span class="ident">initialized_accounts</span>);
             <span class="kw">for</span> <span class="ident">initialized_account</span> <span class="kw">in</span> <span class="ident">initialized_accounts</span> {
                 <span class="comment">// Test for 3.</span>
-                <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">verifiers_changed_keys</span>.<span class="ident">contains_key</span>(<span class="ident">initialized_account</span>));
-                <span class="kw">for</span> (<span class="ident">_verifier_addr</span>, <span class="ident">keys</span>) <span class="kw">in</span> <span class="ident">verifiers_changed_keys</span>.<span class="ident">iter</span>() {
-                    <span class="comment">// Test for 4.</span>
-                    <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">Key::validity_predicate</span>(<span class="ident">initialized_account</span>);
-                    <span class="macro">assert!</span>(<span class="ident">keys</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">vp_key</span>));
-                }
+                <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">verifiers</span>.<span class="ident">contains</span>(<span class="ident">initialized_account</span>));
+                <span class="comment">// Test for 4.</span>
+                <span class="kw">let</span> <span class="ident">vp_key</span> <span class="op">=</span> <span class="ident">storage::Key::validity_predicate</span>(<span class="ident">initialized_account</span>);
+                <span class="macro">assert!</span>(<span class="ident">changed_keys</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">vp_key</span>));
             }
         }
     }
@@ -1408,11 +1378,11 @@
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::address::testing::arb_address</span>;
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::storage::testing::arb_key</span>;
 
-    <span class="doccomment">/// Generate an arbitrary tx write log of [`HashMap&lt;Key,</span>
+    <span class="doccomment">/// Generate an arbitrary tx write log of [`HashMap&lt;storage::Key,</span>
     <span class="doccomment">/// StorageModification&gt;`].</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">arb_tx_write_log</span>(
         <span class="ident">verifiers_from_tx</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">Address</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="kw">impl</span> <span class="ident">Strategy</span><span class="op">&lt;</span><span class="ident">Value</span> <span class="op">=</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Key</span>, <span class="ident">StorageModification</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>
+    ) -&gt; <span class="kw">impl</span> <span class="ident">Strategy</span><span class="op">&lt;</span><span class="ident">Value</span> <span class="op">=</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">storage::Key</span>, <span class="ident">StorageModification</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>
     {
         <span class="ident">arb_key</span>().<span class="ident">prop_flat_map</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">key</span><span class="op">|</span> {
             <span class="comment">// If the key is a validity predicate key and its owner is in the</span>
