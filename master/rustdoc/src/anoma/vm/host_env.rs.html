@@ -1832,6 +1832,7 @@
 <span id="1831">1831</span>
 <span id="1832">1832</span>
 <span id="1833">1833</span>
+<span id="1834">1834</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Virtual machine&#39;s host environment exposes functions that may be called from</span>
 <span class="doccomment">//! within a virtual machine.</span>
 <span class="kw">use</span> <span class="ident">std::collections::BTreeSet</span>;
@@ -2822,7 +2823,8 @@
     <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span>
         <span class="ident">Key::parse</span>(<span class="ident">key</span>).<span class="ident">map_err</span>(<span class="ident">vp_env::RuntimeError::StorageDataError</span>)<span class="question-mark">?</span>;
     <span class="kw">let</span> <span class="ident">storage</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">env</span>.<span class="ident">ctx</span>.<span class="ident">storage</span>.<span class="ident">get</span>() };
-    <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">vp_env::read_pre</span>(<span class="ident">gas_meter</span>, <span class="ident">storage</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">write_log</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">env</span>.<span class="ident">ctx</span>.<span class="ident">write_log</span>.<span class="ident">get</span>() };
+    <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">vp_env::read_pre</span>(<span class="ident">gas_meter</span>, <span class="ident">storage</span>, <span class="ident">write_log</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>)<span class="question-mark">?</span>;
     <span class="macro">tracing::debug!</span>(
         <span class="string">&quot;vp_read_pre addr {}, key {}, value {:?}&quot;</span>,
         <span class="kw">unsafe</span> { <span class="ident">env</span>.<span class="ident">ctx</span>.<span class="ident">address</span>.<span class="ident">get</span>() },
