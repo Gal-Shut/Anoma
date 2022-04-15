@@ -740,6 +740,9 @@
 <span id="739">739</span>
 <span id="740">740</span>
 <span id="741">741</span>
+<span id="742">742</span>
+<span id="743">743</span>
+<span id="744">744</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Write log is temporary storage for modifications performed by a transaction.</span>
 <span class="doccomment">//! before they are committed to the ledger&#39;s storage.</span>
 
@@ -858,7 +861,10 @@
     <span class="doccomment">/// Read a value before the latest tx execution at the given key and return</span>
     <span class="doccomment">/// the value and the gas cost, returns [`None`] if the key is not present</span>
     <span class="doccomment">/// in the write log</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_pre</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">storage::Key</span>) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">StorageModification</span><span class="op">&gt;</span>, <span class="ident">u64</span>) {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_pre</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">storage::Key</span>,
+    ) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">StorageModification</span><span class="op">&gt;</span>, <span class="ident">u64</span>) {
         <span class="comment">// try to read from tx write log first</span>
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">block_write_log</span>.<span class="ident">get</span>(<span class="ident">key</span>) {
             <span class="prelude-val">Some</span>(<span class="ident">v</span>) =&gt; {
