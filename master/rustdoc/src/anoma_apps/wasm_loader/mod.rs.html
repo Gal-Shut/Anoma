@@ -344,6 +344,7 @@
 <span id="343">343</span>
 <span id="344">344</span>
 <span id="345">345</span>
+<span id="346">346</span>
 </pre><pre class="rust"><code><span class="doccomment">//! A module for loading WASM files and downloading pre-built WASMs.</span>
 <span class="kw">use</span> <span class="ident">core::borrow::Borrow</span>;
 <span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
@@ -372,7 +373,8 @@
     <span class="ident">ServerError</span>(<span class="ident">String</span>, <span class="ident">String</span>),
 }
 
-<span class="doccomment">/// A hash map where keys are file names and values their expected sha256 hash</span>
+<span class="doccomment">/// A hash map where keys are simple file names and values their full file name</span>
+<span class="doccomment">/// including SHA256 hash</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
 <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">transparent</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Checksums</span>(<span class="kw">pub</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>);
