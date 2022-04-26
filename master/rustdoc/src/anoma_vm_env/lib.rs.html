@@ -47,7 +47,6 @@
 <span id="46">46</span>
 <span id="47">47</span>
 <span id="48">48</span>
-<span id="49">49</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This crate contains library code for wasm. Some of the code is re-exported</span>
 <span class="doccomment">//! from the `shared` crate.</span>
 
@@ -66,7 +65,6 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">token</span>;
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tx_prelude</span> {
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">anoma::ledger::governance::storage</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">anoma::proto</span>::{<span class="ident">Signed</span>, <span class="ident">SignedTxData</span>};
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">anoma::types::address::Address</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">anoma::types</span>::<span class="kw-2">*</span>;
