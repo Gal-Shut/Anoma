@@ -31,6 +31,7 @@
 
         <!-- Custom theme stylesheets -->
         <link rel="stylesheet" href="../../assets/custom.css">
+        <link rel="stylesheet" href="../../mdbook-admonish.css">
 
         <!-- MathJax -->
         <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
@@ -152,33 +153,52 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="internal-testnet-1"><a class="header" href="#internal-testnet-1">Internal Testnet 1</a></h1>
-<p><em>Last updated on <strong>3/30/2022</strong> by <strong>Alexandre Roque</strong></em></p>
-<p>Current chain id <code>anoma-masp-0.3.51d2f83a8412b95</code> and branch
-<code>internal/testnet-n1</code> (commit
-<code>0184e64e044366ec370d1431ddf4691b4bd3a5b4</code>)</p>
-<h2 id="run-masp-testnet"><a class="header" href="#run-masp-testnet">Run MASP Testnet</a></h2>
-<p><strong>NOTE</strong> Check the <a href="#prerequisites">prerequisities</a> before trying to start a node from binaries.</p>
-<ul>
-<li>Download <code>masp-params.tar.gz</code> and <code>anoma-v0.5.0-49-g0184e64e0-Linux-x86_64.tar.gz</code> <a href="https://drive.google.com/drive/folders/1MM-HOkxDgcbgKbTn8E2xVHVKPhiKBI9C?usp=sharing">from Google Drive</a></li>
-<li>Extract masp params file <code>masp-params.tar.gz</code>
-<ul>
-<li>Linux: into home dir as follow <code>~/.masp-params</code></li>
-<li>Mac OS: into <code>~/Library/Application Support/MASPParams</code></li>
-</ul>
-</li>
-<li>Extract anoma file with prebuilt binaries <code>anoma-v0.5.0-49-g0184e64e0-Linux-x86_64.tar.gz</code></li>
-<li>Go to anoma folder <code>anoma-v0.5.0-49-g0184e64e0-Linux-x86_64</code></li>
-<li>Join chain-id <code>anoma-masp-0.3.51d2f83a8412b95</code> and start your node</li>
-</ul>
-<p>Executing the commands below should start a node:</p>
-<pre><code class="language-bash">cd ~ 
-tar -xvf masp-params.tar.gz
-tar -xvf anoma-v0.5.0-49-g0184e64e0-Linux-x86_64.tar.gz
-cd anoma-v0.5.0-49-g0184e64e0-Linux-x86_64
-./anomac utils join-network --chain-id anoma-masp-0.3.51d2f83a8412b95
-./anoma ledger
+<blockquote>
+<p>⚠️ the values below might change frequently.</p>
+</blockquote>
+<p>Latest values regarding the testnet that would be useful to have in your shell:</p>
+<pre><code class="language-bash">export ANOMA_TESTNET_CHAIN_ID='anoma-masp-0.3.51d2f83a8412b95'
+export ANOMA_TESTNET_BRANCH='internal/testnet-n1'
+export ANOMA_TESTNET_COMMIT='0184e64e044366ec370d1431ddf4691b4bd3a5b4'
 </code></pre>
-<h2 id="using-shielded-transfers"><a class="header" href="#using-shielded-transfers">Using shielded transfers</a></h2>
+<h2 id="installing-namada"><a class="header" href="#installing-namada">Installing Namada</a></h2>
+<p>You can install Namada by following the instructions from the <a href="../../user-guide/install.html">Install User Guide</a>. Note that the binaries should be built from <code>$ANOMA_TESTNET_BRANCH</code> rather than <code>master</code> or a release tag like <code>v0.5.0</code>.</p>
+<h2 id="setting-up-namada"><a class="header" href="#setting-up-namada">Setting up Namada</a></h2>
+<p>At this point, depending on your installation choice, we will assume that the <code>anoma</code> binaries are available on path and built from the latest testnet branch.</p>
+<h3 id="join-a-network"><a class="header" href="#join-a-network">Join a network</a></h3>
+<p>To join the current testnet, you need to download the configuration files. This can be done easily with:</p>
+<pre><code class="language-bash">anomac utils join-network --chain-id $ANOMA_TESTNET_CHAIN_ID
+</code></pre>
+<p>It should output something like this where the chain id might differ:</p>
+<pre><code>Downloading config release from https://github.com/heliaxdev/anoma-network-config/releases/download/anoma-masp-0.3.51d2f83a8412b95/anoma-masp-0.3.51d2f83a8412b95.tar.gz ...
+Successfully configured for chain ID anoma-masp-0.3.51d2f83a8412b9`
+</code></pre>
+<p>The above command downloads the folder <code>.anoma</code> which contains a global config file <code>global-config.toml</code>; the genesis file for the specified chain id <code>{chain-id}.toml</code> and its corresponding configuration folder <code>{chain-id}</code> which contains the checksums for the wasm files under <code>wasm</code> and the p2p config <code>config.toml</code>. </p>
+<h3 id="setup-the-masp-parameters"><a class="header" href="#setup-the-masp-parameters">Setup the MASP parameters</a></h3>
+<p>Namada uses a multi-asset shielded pool (MASP) to enable private transfers. The pool relies on three circuits which require each individually their randomly generated parameters to work.</p>
+<blockquote>
+<p>⚠️ Normally, the parameters are downloaded through the <code>masp</code> crate by the client, but in case of troubles you should get them from someone in the team and follow the instructions below.</p>
+</blockquote>
+<!-- You can download the parameters with:
+```bash
+[command]
+``` -->
+<p>The parameters need to be extracted to the correct folder where the node will read the parameters from. </p>
+<p><strong>Ubuntu</strong></p>
+<pre><code class="language-bash">mkdir ~/.masp-params
+tar -xvf masp-params.tar.gz ~/.masp-params
+</code></pre>
+<p><strong>Mac</strong></p>
+<pre><code class="language-bash">mkdir ~/Library/Application\ Support/MASPParams/
+tar -xvf masp-params.tar.gz ~/Library/Application\ Support/MASPParams/
+</code></pre>
+<h3 id="start-a-node"><a class="header" href="#start-a-node">Start a node</a></h3>
+<p>At this point, you are ready to start your Namada node with:</p>
+<pre><code class="language-bash">anoma ledger
+</code></pre>
+<p>To keep your node running after closing your terminal, you can optionally use a terminal multiplexer like <code>tmux</code>. </p>
+<h2 id="using-namada"><a class="header" href="#using-namada">Using Namada</a></h2>
+<h3 id="shielded-transfers"><a class="header" href="#shielded-transfers">Shielded transfers</a></h3>
 <p>Shielded balances are owned by a particular spending key. In this
 testnet, spending keys are just arbitrary hexadecimal strings, provided
 on the command line.</p>
@@ -232,113 +252,21 @@ different shielded payment address (shielded to shielded):</p>
 <pre><code>./anomac transfer --spending-key [your spending key] --payment-address [someone's payment address] --token btc --amount 50 --signer my-established
 </code></pre>
 <p>or to a transparent account (shielded to transparent):</p>
-<pre><code>./anomac transfer --spending-key [your spending key] --target [some transparent account] --token btc --amount 50 --signer my-established
+<pre><code class="language-bash">anomac transfer --spending-key [your spending key] --target [some transparent account] --token btc --amount 50 --signer my-established
 </code></pre>
 <p>Note that for both of these types of transfer, <code>--signer</code> must be
 specified. However, any transparent account can sign these transactions.</p>
-<h2 id="hardware-requirements"><a class="header" href="#hardware-requirements">Hardware Requirements</a></h2>
-<p>This section covers the minimum and recommended hardware requirements for engaging with the Namada as a validator node.</p>
-<h3 id="minimal-hardware-requirements"><a class="header" href="#minimal-hardware-requirements">Minimal Hardware Requirements</a></h3>
-<table><thead><tr><th>Hardware</th><th>Minimal Specifications</th></tr></thead><tbody>
-<tr><td>CPU</td><td>x86_64 (Intel, AMD) processor with at least 4 physical cores</td></tr>
-<tr><td>RAM</td><td>16GB DDR4</td></tr>
-<tr><td>Storage</td><td>at least 60GB SSD (NVMe SSD is recommended. HDD will be enough for localnet only)</td></tr>
-</tbody></table>
-<h2 id="run-a-node-from-prebuilt-binaries"><a class="header" href="#run-a-node-from-prebuilt-binaries">Run a Node from Prebuilt Binaries</a></h2>
-<p>This is a quickstart guide to install and run Anoma. If you want to install Anoma from Source, Docker or Nix check section <a href="https://docs.anoma.network/v0.5.0/user-guide/install.html">Install Anoma</a> and then come back to this section to run your node.</p>
-<h3 id="install-anoma"><a class="header" href="#install-anoma">Install Anoma</a></h3>
-<h4 id="from-prebuilt-binaries"><a class="header" href="#from-prebuilt-binaries">From Prebuilt Binaries</a></h4>
-<h5 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h5>
-<ul>
-<li><a href="https://www.rust-lang.org/tools/install">Rust</a></li>
-<li><a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">Git</a></li>
-<li>Tendermint 0.34.x pre-installed:
-<ul>
-<li><a href="https://github.com/tendermint/tendermint/releases">Download any of the pre-built binaries for versions 0.34.x</a> and install it using the instructions on the <a href="https://docs.tendermint.com/master/introduction/install.html">Tendermint guide</a></li>
-<li>or use the script from the Anoma repo <a href="https://github.com/anoma/anoma/blob/master/scripts/install/get_tendermint.sh"><code>scripts/install/get_tendermint.sh</code></a>. This is used by the make install command (if you’re installing from the source).</li>
-</ul>
-</li>
-<li>GLIBC v2.29 or higher
-<ul>
-<li>On Ubuntu, you can check your glibc version with <code>ldd --version</code></li>
-<li>By default, the highest version of GLIBC for Ubuntu 18.04 should be 2.27. The best way to go for Ubuntu 18.04 is to build from source, but if you still want to upgrade to a higher version then follow one of the following points:
-<ul>
-<li>The second option is to migrate your application to a system that supports GLIBC higher than or equal to 2.29. This would mean a lot of work though. It seems Ubuntu 19.04 actually uses that version.</li>
-<li>The thired option would be to actually build your GLIBC from source using the version you want or need. I’ve researched it a bit and found a website which actually gives you the steps for you to build the package from source : <a href="http://www.linuxfromscratch.org/lfs/view/9.0-systemd/chapter05/glibc.html">http://www.linuxfromscratch.org/lfs/view/9.0-systemd/chapter05/glibc.html</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h6 id="optional-prerequisites"><a class="header" href="#optional-prerequisites">Optional prerequisites</a></h6>
-<ul>
-<li><a href="https://github.com/tmux/tmux/wiki/Installing">Tmux</a> Terminal Multiplexer (to keep the node running in the background)</li>
-</ul>
-<p><em>Note: we don't support Windows at this point in time.</em></p>
-<ul>
-<li>Open your favorite Terminal</li>
-<li>Install the <a href="https://github.com/anoma/anoma/releases/tag/v0.3.1">Anoma release v0.3.1</a> on your machine by running:</li>
-</ul>
-<p><strong>Linux</strong></p>
-<pre><code class="language-bash">curl -LO https://github.com/anoma/anoma/releases/download/v0.3.1/anoma-v0.3.1-Linux-x86_64.tar.gz
-tar -xzf anoma-v0.3.1-Linux-x86_64.tar.gz
-cd anoma-v0.3.1-Linux-x86_64
-</code></pre>
-<p><strong>MacOS</strong></p>
-<pre><code class="language-bash">curl -LO https://github.com/anoma/anoma/releases/download/v0.3.1/anoma-v0.3.1-Darwin-x86_64.tar.gz
-tar -xzf anoma-v0.3.1-Darwin-x86_64.tar.gz
-cd anoma-v0.3.1-Darwin-x86_64
-</code></pre>
-<h4 id="from-source"><a class="header" href="#from-source">From Source</a></h4>
-<h5 id="prerequisites-1"><a class="header" href="#prerequisites-1">Prerequisites</a></h5>
-<p>To build from source you will have to install some dependencies:</p>
-<ul>
-<li><a href="https://www.rust-lang.org/tools/install">Rust</a></li>
-<li><a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">Git</a></li>
-<li>Clang</li>
-<li>OpenSSL</li>
-<li>LLVM</li>
-</ul>
-<p>For ubuntu users, the following command should install everything necessary:</p>
-<pre><code>curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-sudo apt-get install -y make git-core libssl-dev pkg-config libclang-12-dev
-</code></pre>
-<p>Clone the source code from the <a href="https://github.com/anoma/anoma">Github Anoma repo</a>, then build and install anoma with the following commands:</p>
-<pre><code>git clone https://github.com/anoma/anoma.git --single-branch --branch internal/testnet-n1
-cd anoma
-make install
-</code></pre>
-<h3 id="run-anoma"><a class="header" href="#run-anoma">Run Anoma</a></h3>
-<ul>
-<li>Configure your node to join a network:</li>
-</ul>
-<pre><code>./anomac utils join-network --chain-id=anoma-masp-0.3.51d2f83a8412b95
-</code></pre>
-<p>This should output the following:</p>
-<pre><code>Downloading config release from https://github.com/heliaxdev/anoma-network-config/releases/download/anoma-masp-0.3.51d2f83a8412b95/anoma-masp-0.3.51d2f83a8412b95.tar.gz ...
-Successfully configured for chain ID anoma-masp-0.3.51d2f83a8412b95
-</code></pre>
-<ul>
-<li>Run the ledger into a tmux session:</li>
-</ul>
-<pre><code>tmux new -s anoma
-./anoma ledger
-</code></pre>
-<p>Detach from the anoma tmux session by pressing <code>Ctrl-B then D</code>.
-Attach again to your anoma tmux session by running:</p>
-<pre><code>tmux a -t anoma
-</code></pre>
-<h3 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h3>
-<h4 id="build-from-source"><a class="header" href="#build-from-source">Build from Source</a></h4>
+<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
+<h3 id="build-from-source"><a class="header" href="#build-from-source">Build from Source</a></h3>
 <p>This is required to build the wasm validity predicates.</p>
 <pre><code>rustup target add wasm32-unknown-unknown
 </code></pre>
 <p>Build the provided validity predicate, transaction and matchmaker wasm modules</p>
 <pre><code>make build-wasm-scripts-docker
 </code></pre>
-<h4 id="node-is-not-starting"><a class="header" href="#node-is-not-starting">Node is not starting</a></h4>
-<p><strong>No state could be found</strong>
-If you get the following log, it means that tendermint is not installed properly on your machine. To solve this issue follow the <a href="#prerequisites">prerequisites</a>.</p>
+<h3 id="node-is-not-starting"><a class="header" href="#node-is-not-starting">Node is not starting</a></h3>
+<p><strong>&quot;No state could be found&quot;</strong></p>
+<p>If you get the following log, it means that Tendermint is not installed properly on your machine or not available on path. To solve this issue, install Tendermint by following the <a href="../../user-guide/install.html">Install User Guide</a>.</p>
 <pre><code class="language-bash">2022-03-30T07:21:09.212187Z  INFO anoma_apps::cli::context: Chain ID: anoma-masp-0.3.51d2f83a8412b95
 2022-03-30T07:21:09.213968Z  INFO anoma_apps::node::ledger: Available logical cores: 8
 2022-03-30T07:21:09.213989Z  INFO anoma_apps::node::ledger: Using 4 threads for Rayon.

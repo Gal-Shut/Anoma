@@ -31,6 +31,7 @@
 
         <!-- Custom theme stylesheets -->
         <link rel="stylesheet" href="../assets/custom.css">
+        <link rel="stylesheet" href="../mdbook-admonish.css">
 
         <!-- MathJax -->
         <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
@@ -151,35 +152,64 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="-install-anoma"><a class="header" href="#-install-anoma">💾 Install Anoma</a></h1>
-<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
-<ul>
-<li>Building from source requires at least 16GB of ram available and 4 core cpu</li>
-<li>Free disk space of at least 60GB</li>
-<li>At the moment we are not supporting windows</li>
-</ul>
-<p>There are different ways to install anoma.</p>
-<h2 id="source"><a class="header" href="#source">Source</a></h2>
-<p>Download the source code from <a href="https://github.com/anoma/anoma">github anoma repo</a>.</p>
-<pre><code class="language-shell">git clone https://github.com/anoma/anoma.git
+                        <h1 id="-install-namada"><a class="header" href="#-install-namada">💾 Install Namada</a></h1>
+<blockquote>
+<p>⚠️ We only support Linux or macOS (at the moment, we are not supporting Windows)</p>
+</blockquote>
+<h2 id="hardware-requirements"><a class="header" href="#hardware-requirements">Hardware Requirements</a></h2>
+<p>This section covers the minimum and recommended hardware requirements for engaging with the Namada as a validator node.</p>
+<h3 id="minimal-hardware-requirements"><a class="header" href="#minimal-hardware-requirements">Minimal Hardware Requirements</a></h3>
+<table><thead><tr><th>Hardware</th><th>Minimal Specifications</th></tr></thead><tbody>
+<tr><td>CPU</td><td>x86_64 or arm64 processor with at least 4 physical cores</td></tr>
+<tr><td>RAM</td><td>16GB DDR4</td></tr>
+<tr><td>Storage</td><td>at least 60GB SSD (NVMe SSD is recommended. HDD will be enough for localnet only)</td></tr>
+</tbody></table>
+<p>There are different ways to install Namada: <a href="#from-source">From Source</a>, <a href="#from-binaries">From Binaries</a>, <a href="#from-docker">From Docker</a> and <a href="#from-nix">From Nix</a>.</p>
+<h3 id="from-source"><a class="header" href="#from-source">From Source</a></h3>
+<p>If you'd like to install Namada from source you will have to install some dependencies first: <a href="https://www.rust-lang.org/tools/install">Rust</a>, <a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">Git</a>, Clang, OpenSSL and LLVM.</p>
+<p>First, <a href="https://www.rust-lang.org/tools/install">install Rust</a> by following the instructions from the official page. </p>
+<p>At the end of the installation, make sure that Cargo's bin directory ($HOME/.cargo/bin) is available on your PATH environment variable. You can either restart your shell or run <code>source $HOME/.cargo/env</code> to continue.</p>
+<p>If you already have Rust installed, make sure you're using the latest version by running:</p>
+<pre><code class="language-bash">rustup update
 </code></pre>
-<p>To build from source you will have to install some dependencies:</p>
-<ul>
-<li>rust</li>
-<li>clang</li>
-<li>openssl</li>
-<li>git</li>
-<li>llvm</li>
-</ul>
-<p>For ubuntu users the following command should install everything necessary:</p>
-<pre><code class="language-shell">curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-apt-get install -y make git-core libssl-dev pkg-config libclang-12-dev
+<p>Then, install the remaining dependencies.</p>
+<p><strong>Ubuntu:</strong> running the following command should install everything needed:</p>
+<pre><code class="language-bash">sudo apt-get install -y make git-core libssl-dev pkg-config libclang-12-dev
 </code></pre>
-<p>Last, to build and install anoma you can run the following command:</p>
-<pre><code class="language-bash">make install
+<p><strong>Mac:</strong> installing the Xcode command line tools should provide you with almost everything you need:</p>
+<pre><code class="language-bash">xcode-select --install
 </code></pre>
-<h2 id="nix"><a class="header" href="#nix">Nix</a></h2>
+<p>Now, that you have all dependencies installed you can clone the source code from the <a href="https://github.com/anoma/anoma">Anoma repository</a> and build it with:</p>
+<blockquote>
+<p>⚠️ During internal and private testnets, checkout the latest testnet branch using <code>$ANOMA_TESTNET_BRANCH</code>. </p>
+</blockquote>
+<pre><code class="language-bash">git clone https://github.com/anoma/anoma.git
+cd anoma 
+make install
+</code></pre>
+<h3 id="from-binaries"><a class="header" href="#from-binaries">From Binaries</a></h3>
+<blockquote>
+<p>⚠️ During internal and private testnets, prebuilt binaries might not be availabe under our <a href="https://github.com/anoma/anoma/releases">Github releases page</a>.
+We recommend you <a href="#build-from-source">build from source</a> from the appropriate branch or commit.</p>
+</blockquote>
+<p>If you'd like to install Namada from binaries you will have to install some dependencies first: <a href="https://docs.tendermint.com/master/introduction/install.html">Tendermint</a> <code>0.34.x</code> and GLIBC <code>v2.29</code> or higher.</p>
+<p>Let's install Tendermint. </p>
+<p>You can either follow the instructions on the <a href="https://docs.tendermint.com/master/introduction/install.html">Tendermint guide</a> or download the <code>get_tendermint.sh</code> script from the <a href="https://github.com/anoma/anoma/blob/master/scripts/install/get_tendermint.sh">Anoma repository</a> and execute it (will ask you for <code>root</code> access):</p>
+<pre><code class="language-bash">curl -LO https://raw.githubusercontent.com/anoma/anoma/master/scripts/install/get_tendermint.sh
+chmod +x get_tendermint.sh
+./get_tendermint.sh
+</code></pre>
+<p>Finally, you should have GLIBC <code>v2.29</code> or higher.</p>
+<p><strong>MacOS</strong>: the system-provided glibc should be recent enough.</p>
+<p><strong>Ubuntu 20.04</strong>: this is installed by default and you don't have to do anything more. </p>
+<p><strong>Ubuntu 18.04</strong>: glibc has <code>v2.27</code> by default which is lower than the required version to run Namada. We recommend to directly <a href="#from-source">install from source</a> or upgrade to Ubuntu 19.04, instead of updating glibc to the required version, since the latter way can be a messy and tedious task. In case, updating glibc would interest you this <a href="http://www.linuxfromscratch.org/lfs/view/9.0-systemd/chapter05/glibc.html">website</a> gives you the steps to build the package from source.</p>
+<p>Now, that you have all dependencies installed you can download the latest binary release from our <a href="https://github.com/anoma/anoma/releases">releases page</a> by choosing the appropriate architecture. </p>
+<blockquote>
+<p>⚠️ Prebuilt binaries might not be available for a specific release or architecture, in this case you have to <a href="#from-source">build from source</a>.</p>
+</blockquote>
+<h2 id="from-docker"><a class="header" href="#from-docker">From Docker</a></h2>
+<p>Go to <a href="https://hub.docker.com/r/heliaxdev/anoma">heliaxdev dockerhub account</a> and pull the image.</p>
+<h2 id="from-nix"><a class="header" href="#from-nix">From Nix</a></h2>
 <p>If you have <a href="https://nixos.org/">Nix</a>, you can get Anoma easily as a flake. For
 this to work, make sure that you have Nix 2.4 or later and that you have
 <code>experimental-features = nix-command flakes</code> in your <code>~/.config/nix/nix.conf</code>.</p>
@@ -196,10 +226,6 @@ nix run github:anoma/anoma/&lt;revision&gt;
 <p>With Nix versions older than 2.4, use this command instead:</p>
 <pre><code class="language-shell">nix-env -f https://github.com/anoma/anoma/archive/&lt;revision&gt;.tar.gz -iA default
 </code></pre>
-<h2 id="github-release"><a class="header" href="#github-release">Github release</a></h2>
-<p>Go to <a href="https://github.com/anoma/anoma/releases">anoma github release page</a> and download the last release.</p>
-<h2 id="docker"><a class="header" href="#docker">Docker</a></h2>
-<p>Go to <a href="https://hub.docker.com/r/heliaxdev/anoma">heliaxdev dockerhub account</a> and pull the image.</p>
 
                     </main>
 
