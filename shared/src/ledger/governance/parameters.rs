@@ -99,3 +99,37 @@ impl GovParams {
             .expect("Should be able to write to storage");
     }
 }
+
+/// Helpers for testing
+#[cfg(feature = "testing")]
+pub mod testing {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    /// Generate arbitrary valid Governance parameters.
+    pub fn arb_gov_params() -> impl Strategy<Value = GovParams> {
+        (
+            any::<u64>(),
+            (10..10_000_u64),
+            (1..=10_u64),
+            (10..10_000_u64),
+            (0..=10_u64),
+        )
+            .prop_map(
+                |(
+                    min_proposal_fund,
+                    max_proposal_code_size,
+                    min_proposal_period,
+                    max_proposal_content_size,
+                    min_proposal_grace_epochs,
+                )| GovParams {
+                    min_proposal_fund,
+                    max_proposal_code_size,
+                    min_proposal_period,
+                    max_proposal_content_size,
+                    min_proposal_grace_epochs,
+                },
+            )
+    }
+}
