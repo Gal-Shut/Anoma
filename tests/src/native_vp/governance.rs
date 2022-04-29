@@ -69,3 +69,95 @@
 //!   - If `validator == delegator`, the `validator` must be in the validator
 //!     set (active or inactive) and `current_epoch <= 2/3 * start_epoch +
 //!     end_epoch`
+
+#[cfg(test)]
+mod tests {
+    use proptest::prelude::*;
+    use proptest::prop_state_machine;
+    use proptest::state_machine::{AbstractStateMachine, StateMachineTest};
+    use proptest::test_runner::Config;
+    use test_log::test;
+
+    prop_state_machine! {
+        #![proptest_config(Config {
+            // Instead of the default 256, we only run 5 because otherwise it
+            // takes too long and it's preferable to crank up the number of
+            // transitions instead, to allow each case to run for more epochs as
+            // some issues only manifest once the model progresses further.
+            // Additionally, more cases will be explored every time this test is
+            // executed in the CI.
+            cases: 5,
+            .. Config::default()
+        })]
+        #[test]
+        /// A `StateMachineTest` implemented on `ConcreteGovState`
+        fn gov_vp_state_machine_test(sequential 1..100 => ConcreteGovState);
+    }
+
+    #[derive(Debug)]
+    struct ConcreteGovState {}
+
+    #[derive(Debug)]
+    struct AbstractGovState {}
+
+    #[derive(Clone, Debug)]
+    enum Transition {
+        /// Commit all the tx changes already applied in the tx env
+        CommitTx,
+        /// Switch to a new epoch. This will also commit all the applied valid
+        /// transactions.
+        NextEpoch,
+        /// Valid changes use the current epoch to apply changes correctly
+        Valid(ValidGovAction),
+	/// TODO:
+        /// Invalid changes with valid data structures
+        // InvalidPos(InvalidGovAction),
+        /// TODO:
+        /// Invalid changes with arbitrary data
+        // InvalidArbitrary(crate::storage::Change),
+    }
+
+    #[derive(Clone, Debug)]
+    enum ValidGovAction {
+	    InitProposal(anoma::types::transaction::governance::InitProposalData),
+	    Vote(anoma::types::transaction::governance::VoteProposalData),
+    }
+
+    impl AbstractStateMachine for AbstractGovState {
+        type State = Self;
+        type Transition = Transition;
+
+        fn init_state() -> BoxedStrategy<Self::State> {
+            todo!()
+        }
+
+        fn transitions(state: &Self::State) -> BoxedStrategy<Self::Transition> {
+            todo!()
+        }
+
+        fn apply_abstract(
+            state: Self::State,
+            transition: &Self::Transition,
+        ) -> Self::State {
+            todo!()
+        }
+    }
+
+    impl StateMachineTest for ConcreteGovState {
+        type Abstract = AbstractGovState;
+        type ConcreteState = Self;
+
+        fn init_test(
+            initial_state: <Self::Abstract as AbstractStateMachine>::State,
+        ) -> Self::ConcreteState {
+            todo!()
+        }
+
+        fn apply_concrete(
+            state: Self::ConcreteState,
+            transition: <Self::Abstract as AbstractStateMachine>::Transition,
+        ) -> Self::ConcreteState {
+            todo!()
+        }
+    }
+}
