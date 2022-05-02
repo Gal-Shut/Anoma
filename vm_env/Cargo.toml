@@ -27,8 +27,8 @@ borsh = "0.9.0"
 getrandom = {version = "0.2", features = ["custom"]}
 jubjub = { version = "0.8"}
 bls12_381 = { version = "0.6"}
-#libmasp = { git = "https://github.com/murisi/masp", branch = "murisi/masp-transaction3" }
-masp_primitives = { git = "https://github.com/murisi/masp", branch = "murisi/masp-transaction3" }
-masp_proofs = { git = "https://github.com/murisi/masp", branch = "murisi/masp-transaction3" }
+#libmasp = { git = "https://github.com/murisi/masp", rev = "2c40e91" }
+masp_primitives = { git = "https://github.com/murisi/masp", rev = "2c40e91" }
+masp_proofs = { git = "https://github.com/murisi/masp", rev = "2c40e91" }
 ff = { version = "0.11" }
 hex = "0.4.3"
