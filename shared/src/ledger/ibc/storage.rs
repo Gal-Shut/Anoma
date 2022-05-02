@@ -2,6 +2,7 @@
 
 use std::str::FromStr;
 
+use ibc_abci::core::ics24_host::path::ClientConnectionsPath;
 use thiserror::Error;
 
 use crate::ibc::core::ics02_client::height::Height;
@@ -143,6 +144,14 @@ pub fn client_type_key(client_id: &ClientId) -> Key {
     let path = Path::ClientType(ClientTypePath(client_id.clone()));
     ibc_key(path.to_string())
         .expect("Creating a key for the client state shouldn't fail")
+}
+
+/// Returns a key of the client's connection id list
+pub fn connection_ids_key(client_id: &ClientId) -> Key {
+    let path =
+        Path::ClientConnections(ClientConnectionsPath(client_id.clone()));
+    ibc_key(path.to_string())
+        .expect("Creating a key for the connection id list shouldn't fail")
 }
 
 /// Returns a key for the client state
