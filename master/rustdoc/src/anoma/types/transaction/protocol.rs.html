@@ -184,7 +184,6 @@
 <span id="183">183</span>
 <span id="184">184</span>
 <span id="185">185</span>
-<span id="186">186</span>
 </pre><pre class="rust"><code><span class="doccomment">/// Types for sending and verifying txs</span>
 <span class="doccomment">/// used in Anoma protocols</span>
 <span class="kw">use</span> <span class="ident">borsh</span>::{<span class="ident">BorshDeserialize</span>, <span class="ident">BorshSerialize</span>};
@@ -192,8 +191,7 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::address::Address</span>;
 
-<span class="doccomment">/// A tx data type to initialize a new validator account and its staking reward</span>
-<span class="doccomment">/// account.</span>
+<span class="doccomment">/// A data type containing information used to update the DKG session key</span>
 <span class="attribute">#[<span class="ident">derive</span>(
     <span class="ident">Debug</span>,
     <span class="ident">Clone</span>,

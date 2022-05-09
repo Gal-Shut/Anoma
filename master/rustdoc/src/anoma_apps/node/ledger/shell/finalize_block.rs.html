@@ -1082,6 +1082,13 @@
 <span id="1081">1081</span>
 <span id="1082">1082</span>
 <span id="1083">1083</span>
+<span id="1084">1084</span>
+<span id="1085">1085</span>
+<span id="1086">1086</span>
+<span id="1087">1087</span>
+<span id="1088">1088</span>
+<span id="1089">1089</span>
+<span id="1090">1090</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Implementation of the `FinalizeBlock` ABCI++ method for the Shell</span>
 
 <span class="kw">use</span> <span class="ident">anoma::types::storage::BlockHash</span>;
@@ -1109,11 +1116,11 @@
     <span class="doccomment">/// of epoch changes and applies associated updates to validator sets,</span>
     <span class="doccomment">/// etc. as necessary.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Validate and apply decrypted transactions unless [`process_proposal`]</span>
-    <span class="doccomment">/// detected that they were not submitted in correct order or more</span>
-    <span class="doccomment">/// decrypted txs arrived than expected. In that case, all decrypted</span>
-    <span class="doccomment">/// transactions are not applied and must be included in the next</span>
-    <span class="doccomment">/// [`prepare_proposal`] call.</span>
+    <span class="doccomment">/// Validate and apply decrypted transactions unless</span>
+    <span class="doccomment">/// [`Shell::process_proposal`] detected that they were not submitted in</span>
+    <span class="doccomment">/// correct order or more decrypted txs arrived than expected. In that</span>
+    <span class="doccomment">/// case, all decrypted transactions are not applied and must be</span>
+    <span class="doccomment">/// included in the next `Shell::prepare_proposal` call.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Incoming wrapper txs need no further validation. They</span>
     <span class="doccomment">/// are added to the block.</span>
@@ -1248,10 +1255,17 @@
                     }
                     <span class="ident">event</span>
                 }
-                <span class="ident">TxType::Raw</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">TxType::Protocol</span>(<span class="kw">_</span>) =&gt; {
+                <span class="ident">TxType::Raw</span>(<span class="kw">_</span>) =&gt; {
                     <span class="macro">tracing::error!</span>(
                         <span class="string">&quot;Internal logic error: FinalizeBlock received a \
                          TxType::Raw transaction&quot;</span>
+                    );
+                    <span class="kw">continue</span>;
+                }
+                <span class="ident">TxType::Protocol</span>(<span class="kw">_</span>) =&gt; {
+                    <span class="macro">tracing::error!</span>(
+                        <span class="string">&quot;Internal logic error: FinalizeBlock received a \
+                         TxType::Protocol transaction&quot;</span>
                     );
                     <span class="kw">continue</span>;
                 }
