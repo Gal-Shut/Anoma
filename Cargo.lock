@@ -2855,8 +2855,7 @@ dependencies = [
 [[package]]
 name = "ics23"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d454cc0a22bd556cc3d3c69f9d75a392a36244634840697a4b9eb81bc5c8ae0"
+source = "git+https://github.com/heliaxdev/ics23?branch=yuji/for_smt_0.7#00fb3be7efe2777a2aecdf19381fc707230aa070"
 dependencies = [
  "anyhow",
  "bytes 1.1.0",

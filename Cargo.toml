@@ -33,6 +33,7 @@ borsh-schema-derive-internal = {git = "https://github.com/heliaxdev/borsh-rs.git
 # borsh-derive = {path = "../borsh-rs/borsh-derive"}
 # borsh-derive-internal = {path = "../borsh-rs/borsh-derive-internal"}
 # borsh-schema-derive-internal = {path = "../borsh-rs/borsh-schema-derive-internal"}
+ics23 = {git = "https://github.com/heliaxdev/ics23", branch = "yuji/for_smt_0.7"}
 
 [profile.release]
 lto = true
