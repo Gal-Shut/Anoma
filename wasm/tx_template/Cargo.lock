@@ -1057,7 +1057,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 [[package]]
 name = "ibc"
 version = "0.14.0"
-source = "git+https://github.com/heliaxdev/ibc-rs?branch=yuji/v0.14.0_tm_v0.23.5#d5b74b12d6601c759c6f927fe9649e7f32452dce"
+source = "git+https://github.com/heliaxdev/ibc-rs?branch=yuji/v0.14.0_tm_v0.23.5#e22ff9f372ceb2f2e7fc4efc949cfafa853febf1"
 dependencies = [
  "bytes",
  "derive_more",
@@ -1084,7 +1084,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.17.1"
-source = "git+https://github.com/heliaxdev/ibc-rs?branch=yuji/v0.14.0_tm_v0.23.5#d5b74b12d6601c759c6f927fe9649e7f32452dce"
+source = "git+https://github.com/heliaxdev/ibc-rs?branch=yuji/v0.14.0_tm_v0.23.5#e22ff9f372ceb2f2e7fc4efc949cfafa853febf1"
 dependencies = [
  "base64",
  "bytes",
@@ -1097,8 +1097,7 @@ dependencies = [
 [[package]]
 name = "ics23"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d454cc0a22bd556cc3d3c69f9d75a392a36244634840697a4b9eb81bc5c8ae0"
+source = "git+https://github.com/heliaxdev/ics23?branch=yuji/for_smt_0.7#00fb3be7efe2777a2aecdf19381fc707230aa070"
 dependencies = [
  "anyhow",
  "bytes",
