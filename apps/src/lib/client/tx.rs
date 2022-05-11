@@ -512,6 +512,9 @@ pub async fn submit_ibc_transfer(ctx: Context, args: args::TxIbcTransfer) {
             }
         }
     }
+    let status = client.status().await.unwrap();
+    let latest_height: u64 = status.sync_info.latest_block_height.into();
+
     let tx_code = ctx.read_wasm(TX_IBC_WASM);
 
     let token = Some(Coin {
@@ -525,7 +528,7 @@ pub async fn submit_ibc_transfer(ctx: Context, args: args::TxIbcTransfer) {
         sender: Signer::new(source.to_string()),
         receiver: Signer::new(args.receiver),
         // TODO timeout isn't supported for now
-        timeout_height: IbcHeight::new(0, 1000),
+        timeout_height: IbcHeight::new(0, latest_height + 1000),
         timeout_timestamp: IbcTimestamp::none(),
     };
     tracing::debug!("IBC transfer message {:?}", msg);
