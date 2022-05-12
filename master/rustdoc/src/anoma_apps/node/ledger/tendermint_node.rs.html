@@ -413,6 +413,7 @@
 <span id="412">412</span>
 <span id="413">413</span>
 <span id="414">414</span>
+<span id="415">415</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
 <span class="kw">use</span> <span class="ident">std::str::FromStr</span>;
 
@@ -745,6 +746,7 @@
     <span class="ident">config</span>.<span class="ident">p2p</span>.<span class="ident">persistent_peers</span> <span class="op">=</span> <span class="ident">tendermint_config</span>.<span class="ident">p2p_persistent_peers</span>;
     <span class="ident">config</span>.<span class="ident">p2p</span>.<span class="ident">pex</span> <span class="op">=</span> <span class="ident">tendermint_config</span>.<span class="ident">p2p_pex</span>;
     <span class="ident">config</span>.<span class="ident">p2p</span>.<span class="ident">allow_duplicate_ip</span> <span class="op">=</span> <span class="ident">tendermint_config</span>.<span class="ident">p2p_allow_duplicate_ip</span>;
+    <span class="ident">config</span>.<span class="ident">p2p</span>.<span class="ident">addr_book_strict</span> <span class="op">=</span> <span class="ident">tendermint_config</span>.<span class="ident">p2p_addr_book_strict</span>;
 
     <span class="comment">// In &quot;dev&quot;, only produce blocks when there are txs or when the AppHash</span>
     <span class="comment">// changes</span>

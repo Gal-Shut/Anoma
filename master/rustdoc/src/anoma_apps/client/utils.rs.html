@@ -972,17 +972,6 @@
 <span id="971">971</span>
 <span id="972">972</span>
 <span id="973">973</span>
-<span id="974">974</span>
-<span id="975">975</span>
-<span id="976">976</span>
-<span id="977">977</span>
-<span id="978">978</span>
-<span id="979">979</span>
-<span id="980">980</span>
-<span id="981">981</span>
-<span id="982">982</span>
-<span id="983">983</span>
-<span id="984">984</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
 <span class="kw">use</span> <span class="ident">std::env</span>;
 <span class="kw">use</span> <span class="ident">std::fs</span>::{<span class="self">self</span>, <span class="ident">File</span>, <span class="ident">OpenOptions</span>};
@@ -1194,8 +1183,8 @@
 <span class="doccomment">/// Length of a Tendermint Node ID in bytes</span>
 <span class="kw">const</span> <span class="ident">TENDERMINT_NODE_ID_LENGTH</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">20</span>;
 
-<span class="doccomment">/// Derive node ID from public key</span>
-<span class="kw">fn</span> <span class="ident">id_from_pk</span><span class="op">&lt;</span><span class="ident">PK</span>: <span class="ident">PublicKey</span><span class="op">&gt;</span>(<span class="ident">pk</span>: <span class="ident">PK</span>) -&gt; <span class="ident">TendermintNodeId</span> {
+<span class="doccomment">/// Derive Tendermint node ID from public key</span>
+<span class="kw">fn</span> <span class="ident">id_from_pk</span>(<span class="ident">pk</span>: <span class="kw-2">&amp;</span><span class="ident">ed25519::PublicKey</span>) -&gt; <span class="ident">TendermintNodeId</span> {
     <span class="kw">let</span> <span class="ident">digest</span> <span class="op">=</span> <span class="ident">Sha256::digest</span>(<span class="ident">pk</span>.<span class="ident">try_to_vec</span>().<span class="ident">unwrap</span>().<span class="ident">as_slice</span>());
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> [<span class="number">0u8</span>; <span class="ident">TENDERMINT_NODE_ID_LENGTH</span>];
     <span class="ident">bytes</span>.<span class="ident">copy_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">digest</span>[..<span class="ident">TENDERMINT_NODE_ID_LENGTH</span>]);
@@ -1270,31 +1259,23 @@
         <span class="kw">let</span> <span class="ident">validator_dir</span> <span class="op">=</span> <span class="ident">accounts_dir</span>.<span class="ident">join</span>(<span class="ident">name</span>);
 
         <span class="comment">// Generate a node key</span>
-        <span class="kw">let</span> <span class="ident">node_seckey</span>: <span class="ident">common::SecretKey</span> <span class="op">=</span>
-            <span class="ident">ed25519::SigScheme::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>).<span class="ident">try_to_sk</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">node_pk</span>: <span class="ident">common::PublicKey</span> <span class="op">=</span> <span class="ident">node_seckey</span>.<span class="ident">ref_to</span>();
+        <span class="kw">let</span> <span class="ident">node_sk</span> <span class="op">=</span> <span class="ident">ed25519::SigScheme::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
+        <span class="kw">let</span> <span class="ident">node_pk</span>: <span class="ident">ed25519::PublicKey</span> <span class="op">=</span> <span class="ident">node_sk</span>.<span class="ident">ref_to</span>();
 
         <span class="comment">// Derive the node ID from the node key</span>
-        <span class="kw">let</span> <span class="ident">node_id</span>: <span class="ident">TendermintNodeId</span> <span class="op">=</span> <span class="ident">id_from_pk</span>(<span class="ident">node_pk</span>);
+        <span class="kw">let</span> <span class="ident">node_id</span>: <span class="ident">TendermintNodeId</span> <span class="op">=</span> <span class="ident">id_from_pk</span>(<span class="kw-2">&amp;</span><span class="ident">node_pk</span>);
 
-        <span class="kw">let</span> <span class="ident">tm_node_keypair_json</span> <span class="op">=</span>
-            <span class="ident">ed25519::SecretKey::try_from_sk</span>(<span class="kw-2">&amp;</span><span class="ident">node_seckey</span>)
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">sk</span><span class="op">|</span> {
-                    <span class="comment">// Convert and write the keypair into Tendermint</span>
-                    <span class="comment">// node_key.json file</span>
-                    <span class="kw">let</span> <span class="ident">node_keypair</span> <span class="op">=</span> [
-                        <span class="ident">sk</span>.<span class="ident">try_to_vec</span>().<span class="ident">unwrap</span>(),
-                        <span class="ident">sk</span>.<span class="ident">ref_to</span>().<span class="ident">try_to_vec</span>().<span class="ident">unwrap</span>(),
-                    ]
-                    .<span class="ident">concat</span>();
-                    <span class="macro">json!</span>({
-                        <span class="string">&quot;priv_key&quot;</span>: {
-                            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;tendermint/PrivKeyEd25519&quot;</span>,
-                            <span class="string">&quot;value&quot;</span>: <span class="ident">base64::encode</span>(<span class="ident">node_keypair</span>),
-                        }
-                    })
-                })
-                .<span class="ident">unwrap</span>();
+        <span class="comment">// Convert and write the keypair into Tendermint</span>
+        <span class="comment">// node_key.json file</span>
+        <span class="kw">let</span> <span class="ident">node_keypair</span> <span class="op">=</span>
+            [<span class="ident">node_sk</span>.<span class="ident">try_to_vec</span>().<span class="ident">unwrap</span>(), <span class="ident">node_pk</span>.<span class="ident">try_to_vec</span>().<span class="ident">unwrap</span>()]
+                .<span class="ident">concat</span>();
+        <span class="kw">let</span> <span class="ident">tm_node_keypair_json</span> <span class="op">=</span> <span class="macro">json!</span>({
+            <span class="string">&quot;priv_key&quot;</span>: {
+                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;tendermint/PrivKeyEd25519&quot;</span>,
+                <span class="string">&quot;value&quot;</span>: <span class="ident">base64::encode</span>(<span class="ident">node_keypair</span>),
+            }
+        });
         <span class="kw">let</span> <span class="ident">chain_dir</span> <span class="op">=</span> <span class="ident">validator_dir</span>.<span class="ident">join</span>(<span class="kw-2">&amp;</span><span class="ident">accounts_temp_dir</span>);
         <span class="kw">let</span> <span class="ident">tm_home_dir</span> <span class="op">=</span> <span class="ident">chain_dir</span>.<span class="ident">join</span>(<span class="string">&quot;tendermint&quot;</span>);
         <span class="kw">let</span> <span class="ident">tm_config_dir</span> <span class="op">=</span> <span class="ident">tm_home_dir</span>.<span class="ident">join</span>(<span class="string">&quot;config&quot;</span>);
@@ -1722,11 +1703,7 @@
     );
 
     <span class="comment">// Update the ledger config persistent peers and save it</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">config</span> <span class="op">=</span> <span class="ident">Config::load</span>(
-        <span class="kw-2">&amp;</span><span class="ident">global_args</span>.<span class="ident">base_dir</span>,
-        <span class="kw-2">&amp;</span><span class="ident">chain_id</span>,
-        <span class="prelude-val">Some</span>(<span class="ident">TendermintMode::Validator</span>),
-    );
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">config</span> <span class="op">=</span> <span class="ident">Config::load</span>(<span class="kw-2">&amp;</span><span class="ident">global_args</span>.<span class="ident">base_dir</span>, <span class="kw-2">&amp;</span><span class="ident">chain_id</span>, <span class="prelude-val">None</span>);
     <span class="ident">config</span>.<span class="ident">ledger</span>.<span class="ident">tendermint</span>.<span class="ident">p2p_persistent_peers</span> <span class="op">=</span> <span class="ident">persistent_peers</span>;
     <span class="ident">config</span>.<span class="ident">ledger</span>.<span class="ident">tendermint</span>.<span class="ident">consensus_timeout_commit</span> <span class="op">=</span>
         <span class="ident">consensus_timeout_commit</span>;
@@ -1739,6 +1716,7 @@
             .<span class="ident">p2p_address</span>
             .<span class="ident">set_ip</span>(<span class="ident">IpAddr::V4</span>(<span class="ident">Ipv4Addr::new</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)));
     }
+    <span class="ident">config</span>.<span class="ident">ledger</span>.<span class="ident">tendermint</span>.<span class="ident">p2p_addr_book_strict</span> <span class="op">=</span> <span class="op">!</span><span class="ident">localhost</span>;
     <span class="ident">config</span>.<span class="ident">ledger</span>.<span class="ident">genesis_time</span> <span class="op">=</span> <span class="ident">genesis</span>.<span class="ident">genesis_time</span>.<span class="ident">into</span>();
     <span class="ident">config</span>.<span class="ident">intent_gossiper</span>.<span class="ident">seed_peers</span> <span class="op">=</span> <span class="ident">seed_peers</span>;
     <span class="ident">config</span>

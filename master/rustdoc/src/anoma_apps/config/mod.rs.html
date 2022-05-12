@@ -528,6 +528,10 @@
 <span id="527">527</span>
 <span id="528">528</span>
 <span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Node and client configuration</span>
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">genesis</span>;
@@ -650,6 +654,9 @@
     <span class="kw">pub</span> <span class="ident">p2p_pex</span>: <span class="ident">bool</span>,
     <span class="doccomment">/// Toggle to disable guard against peers connecting from the same IP</span>
     <span class="kw">pub</span> <span class="ident">p2p_allow_duplicate_ip</span>: <span class="ident">bool</span>,
+    <span class="doccomment">/// Set `true` for strict address routability rules</span>
+    <span class="doccomment">/// Set `false` for private or local networks</span>
+    <span class="kw">pub</span> <span class="ident">p2p_addr_book_strict</span>: <span class="ident">bool</span>,
     <span class="doccomment">/// How long we wait after committing a block, before starting on the new</span>
     <span class="doccomment">/// height</span>
     <span class="kw">pub</span> <span class="ident">consensus_timeout_commit</span>: <span class="ident">Timeout</span>,
@@ -718,6 +725,7 @@
                 <span class="ident">p2p_persistent_peers</span>: <span class="macro">vec!</span>[],
                 <span class="ident">p2p_pex</span>: <span class="bool-val">true</span>,
                 <span class="ident">p2p_allow_duplicate_ip</span>: <span class="bool-val">false</span>,
+                <span class="ident">p2p_addr_book_strict</span>: <span class="bool-val">true</span>,
                 <span class="ident">consensus_timeout_commit</span>: <span class="ident">Timeout::from_str</span>(<span class="string">&quot;1s&quot;</span>).<span class="ident">unwrap</span>(),
                 <span class="ident">tendermint_mode</span>: <span class="ident">mode</span>,
                 <span class="ident">instrumentation_prometheus</span>: <span class="bool-val">false</span>,
@@ -874,7 +882,7 @@
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::file_path</span>(<span class="ident">base_dir</span>, <span class="ident">chain_id</span>);
         <span class="kw">let</span> <span class="ident">file_name</span> <span class="op">=</span> <span class="ident">file_path</span>.<span class="ident">to_str</span>().<span class="ident">expect</span>(<span class="string">&quot;Expected UTF-8 file path&quot;</span>);
-        <span class="kw">let</span> <span class="ident">mode</span> <span class="op">=</span> <span class="ident">mode</span>.<span class="ident">unwrap_or</span>(<span class="ident">TendermintMode::Validator</span>);
+        <span class="kw">let</span> <span class="ident">mode</span> <span class="op">=</span> <span class="ident">mode</span>.<span class="ident">unwrap_or</span>(<span class="ident">TendermintMode::Full</span>);
         <span class="kw">if</span> <span class="op">!</span><span class="ident">file_path</span>.<span class="ident">exists</span>() {
             <span class="kw">return</span> <span class="ident"><span class="self">Self</span>::generate</span>(<span class="ident">base_dir</span>, <span class="ident">chain_id</span>, <span class="ident">mode</span>, <span class="bool-val">true</span>);
         };
