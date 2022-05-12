@@ -717,6 +717,17 @@
 <span id="716">716</span>
 <span id="717">717</span>
 <span id="718">718</span>
+<span id="719">719</span>
+<span id="720">720</span>
+<span id="721">721</span>
+<span id="722">722</span>
+<span id="723">723</span>
+<span id="724">724</span>
+<span id="725">725</span>
+<span id="726">726</span>
+<span id="727">727</span>
+<span id="728">728</span>
+<span id="729">729</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Implements transparent addresses as described in [Accounts</span>
 <span class="doccomment">//! Addresses](docs/src/explore/design/ledger/accounts.md#addresses).</span>
 
@@ -778,6 +789,8 @@
         <span class="string">&quot;ano::Protocol Parameters                     &quot;</span>;
     <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">GOVERNANCE</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span>
         <span class="string">&quot;ano::Governance                              &quot;</span>;
+    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TREASURY</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span>
+        <span class="string">&quot;ano::Treasury                                &quot;</span>;
     <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">IBC_BURN</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span>
         <span class="string">&quot;ano::IBC Burn Address                        &quot;</span>;
     <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">IBC_MINT</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span>
@@ -900,6 +913,7 @@
                     <span class="ident">InternalAddress::Governance</span> =&gt; {
                         <span class="ident">internal::GOVERNANCE</span>.<span class="ident">to_string</span>()
                     }
+                    <span class="ident">InternalAddress::Treasury</span> =&gt; <span class="ident">internal::TREASURY</span>.<span class="ident">to_string</span>(),
                     <span class="ident">InternalAddress::IbcEscrow</span>(<span class="ident">hash</span>) =&gt; {
                         <span class="macro">format!</span>(<span class="string">&quot;{}::{}&quot;</span>, <span class="ident">PREFIX_INTERNAL</span>, <span class="ident">hash</span>)
                     }
@@ -955,6 +969,9 @@
                 }
                 <span class="ident">internal::GOVERNANCE</span> =&gt; {
                     <span class="prelude-val">Ok</span>(<span class="ident">Address::Internal</span>(<span class="ident">InternalAddress::Governance</span>))
+                }
+                <span class="ident">internal::TREASURY</span> =&gt; {
+                    <span class="prelude-val">Ok</span>(<span class="ident">Address::Internal</span>(<span class="ident">InternalAddress::Treasury</span>))
                 }
                 <span class="ident">internal::IBC_MINT</span> =&gt; {
                     <span class="prelude-val">Ok</span>(<span class="ident">Address::Internal</span>(<span class="ident">InternalAddress::IbcMint</span>))
@@ -1152,6 +1169,8 @@
     <span class="ident">IbcMint</span>,
     <span class="doccomment">/// Governance address</span>
     <span class="ident">Governance</span>,
+    <span class="doccomment">/// Treasury address</span>
+    <span class="ident">Treasury</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">InternalAddress</span> {
@@ -1176,6 +1195,7 @@
                 <span class="ident"><span class="self">Self</span>::Ibc</span> =&gt; <span class="string">&quot;IBC&quot;</span>.<span class="ident">to_string</span>(),
                 <span class="ident"><span class="self">Self</span>::Parameters</span> =&gt; <span class="string">&quot;Parameters&quot;</span>.<span class="ident">to_string</span>(),
                 <span class="ident"><span class="self">Self</span>::Governance</span> =&gt; <span class="string">&quot;Governance&quot;</span>.<span class="ident">to_string</span>(),
+                <span class="ident"><span class="self">Self</span>::Treasury</span> =&gt; <span class="string">&quot;Treasury&quot;</span>.<span class="ident">to_string</span>(),
                 <span class="ident"><span class="self">Self</span>::IbcEscrow</span>(<span class="ident">hash</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;IbcEscrow: {}&quot;</span>, <span class="ident">hash</span>),
                 <span class="ident"><span class="self">Self</span>::IbcBurn</span> =&gt; <span class="string">&quot;IbcBurn&quot;</span>.<span class="ident">to_string</span>(),
                 <span class="ident"><span class="self">Self</span>::IbcMint</span> =&gt; <span class="string">&quot;IbcMint&quot;</span>.<span class="ident">to_string</span>(),
@@ -1411,6 +1431,7 @@
             <span class="ident">InternalAddress::PosSlashPool</span> =&gt; {}
             <span class="ident">InternalAddress::Ibc</span> =&gt; {}
             <span class="ident">InternalAddress::Governance</span> =&gt; {}
+            <span class="ident">InternalAddress::Treasury</span> =&gt; {}
             <span class="ident">InternalAddress::Parameters</span> =&gt; {}
             <span class="ident">InternalAddress::IbcEscrow</span>(<span class="kw">_</span>) =&gt; {}
             <span class="ident">InternalAddress::IbcBurn</span> =&gt; {}
@@ -1427,6 +1448,7 @@
             <span class="ident">Just</span>(<span class="ident">InternalAddress::IbcBurn</span>),
             <span class="ident">Just</span>(<span class="ident">InternalAddress::IbcMint</span>),
             <span class="ident">Just</span>(<span class="ident">InternalAddress::Governance</span>),
+            <span class="ident">Just</span>(<span class="ident">InternalAddress::Treasury</span>),
         ]
     }
 

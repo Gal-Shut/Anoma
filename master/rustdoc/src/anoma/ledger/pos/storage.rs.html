@@ -598,6 +598,17 @@
 <span id="597">597</span>
 <span id="598">598</span>
 <span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Proof-of-Stake storage keys and storage integration via [`PosBase`] trait.</span>
 
 <span class="kw">use</span> <span class="ident">anoma_proof_of_stake::parameters::PosParams</span>;
@@ -952,6 +963,17 @@
             <span class="bool-val">true</span>
         }
         <span class="kw">_</span> =&gt; <span class="bool-val">false</span>,
+    }
+}
+
+<span class="doccomment">/// Get validator address from bond key</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_validator_address_from_bond</span>(<span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">Key</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Address</span><span class="op">&gt;</span> {
+    <span class="kw">match</span> <span class="ident">key</span>.<span class="ident">get_at</span>(<span class="number">3</span>) {
+        <span class="prelude-val">Some</span>(<span class="ident">segment</span>) =&gt; <span class="kw">match</span> <span class="ident">segment</span> {
+            <span class="ident">DbKeySeg::AddressSeg</span>(<span class="ident">addr</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()),
+            <span class="ident">DbKeySeg::StringSeg</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+        },
+        <span class="prelude-val">None</span> =&gt; <span class="prelude-val">None</span>,
     }
 }
 

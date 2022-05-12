@@ -396,6 +396,17 @@
 <span id="395">395</span>
 <span id="396">396</span>
 <span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The ledger&#39;s protocol</span>
 <span class="kw">use</span> <span class="ident">std::collections::BTreeSet</span>;
 <span class="kw">use</span> <span class="ident">std::panic</span>;
@@ -408,6 +419,7 @@
 <span class="kw">use</span> <span class="ident">anoma::ledger::pos</span>::{<span class="self">self</span>, <span class="ident">PosVP</span>};
 <span class="kw">use</span> <span class="ident">anoma::ledger::storage::write_log::WriteLog</span>;
 <span class="kw">use</span> <span class="ident">anoma::ledger::storage</span>::{<span class="ident">DBIter</span>, <span class="ident">Storage</span>, <span class="ident">StorageHasher</span>, <span class="ident">DB</span>};
+<span class="kw">use</span> <span class="ident">anoma::ledger::treasury::TreasuryVp</span>;
 <span class="kw">use</span> <span class="ident">anoma::proto</span>::{<span class="self">self</span>, <span class="ident">Tx</span>};
 <span class="kw">use</span> <span class="ident">anoma::types::address</span>::{<span class="ident">Address</span>, <span class="ident">InternalAddress</span>};
 <span class="kw">use</span> <span class="ident">anoma::types::storage</span>;
@@ -444,7 +456,9 @@
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;IBC Token native VP: {0}&quot;</span>)]</span>
     <span class="ident">IbcTokenNativeVpError</span>(<span class="ident">anoma::ledger::ibc::vp::IbcTokenError</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Governance native VP error: {0}&quot;</span>)]</span>
-    <span class="ident">GovernanceNativeVpError</span>(<span class="ident">anoma::ledger::governance::Error</span>),
+    <span class="ident">GovernanceNativeVpError</span>(<span class="ident">anoma::ledger::governance::vp::Error</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Treasury native VP error: {0}&quot;</span>)]</span>
+    <span class="ident">TreasuryNativeVpError</span>(<span class="ident">anoma::ledger::treasury::Error</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Access to an internal address {0} is forbidden&quot;</span>)]</span>
     <span class="ident">AccessForbidden</span>(<span class="ident">InternalAddress</span>),
 }
@@ -715,6 +729,14 @@
                                 .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="kw-2">&amp;</span><span class="ident">keys_changed</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers</span>)
                                 .<span class="ident">map_err</span>(<span class="ident">Error::GovernanceNativeVpError</span>);
                             <span class="ident">gas_meter</span> <span class="op">=</span> <span class="ident">governance</span>.<span class="ident">ctx</span>.<span class="ident">gas_meter</span>.<span class="ident">into_inner</span>();
+                            <span class="ident">result</span>
+                        }
+                        <span class="ident">InternalAddress::Treasury</span> =&gt; {
+                            <span class="kw">let</span> <span class="ident">treasury</span> <span class="op">=</span> <span class="ident">TreasuryVp</span> { <span class="ident">ctx</span> };
+                            <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">treasury</span>
+                                .<span class="ident">validate_tx</span>(<span class="ident">tx_data</span>, <span class="kw-2">&amp;</span><span class="ident">keys_changed</span>, <span class="kw-2">&amp;</span><span class="ident">verifiers</span>)
+                                .<span class="ident">map_err</span>(<span class="ident">Error::TreasuryNativeVpError</span>);
+                            <span class="ident">gas_meter</span> <span class="op">=</span> <span class="ident">treasury</span>.<span class="ident">ctx</span>.<span class="ident">gas_meter</span>.<span class="ident">into_inner</span>();
                             <span class="ident">result</span>
                         }
                         <span class="ident">InternalAddress::IbcEscrow</span>(<span class="kw">_</span>)

@@ -217,10 +217,25 @@
 <span id="216">216</span>
 <span id="217">217</span>
 <span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
 <span class="kw">use</span> <span class="ident">std::fmt</span>::{<span class="self">self</span>, <span class="ident">Display</span>};
 <span class="kw">use</span> <span class="ident">std::ops</span>::{<span class="ident">Index</span>, <span class="ident">IndexMut</span>};
 
+<span class="kw">use</span> <span class="ident">anoma::ledger::governance::utils::ProposalEvent</span>;
 <span class="kw">use</span> <span class="ident">anoma::types::ibc::IbcEvent</span>;
 <span class="kw">use</span> <span class="ident">anoma::types::transaction</span>::{<span class="ident">hash_tx</span>, <span class="ident">TxType</span>};
 <span class="kw">use</span> <span class="ident">borsh::BorshSerialize</span>;
@@ -246,6 +261,8 @@
     <span class="ident">Applied</span>,
     <span class="comment">// The IBC transaction was applied during block finalization</span>
     <span class="ident">Ibc</span>(<span class="ident">String</span>),
+    <span class="comment">// The proposal that has been executed</span>
+    <span class="ident">Proposal</span>,
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ABCI&quot;</span>))]</span>
@@ -255,6 +272,7 @@
             <span class="ident">EventType::Accepted</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;accepted&quot;</span>),
             <span class="ident">EventType::Applied</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;applied&quot;</span>),
             <span class="ident">EventType::Ibc</span>(<span class="ident">t</span>) =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">t</span>),
+            <span class="ident">EventType::Proposal</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;proposal&quot;</span>),
         }<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
@@ -267,6 +285,7 @@
             <span class="ident">EventType::Accepted</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;applied&quot;</span>),
             <span class="ident">EventType::Applied</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;applied&quot;</span>),
             <span class="ident">EventType::Ibc</span>(<span class="ident">t</span>) =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">t</span>),
+            <span class="ident">EventType::Proposal</span> =&gt; <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;proposal&quot;</span>),
         }<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
@@ -348,6 +367,15 @@
         <span class="self">Self</span> {
             <span class="ident">event_type</span>: <span class="ident">EventType::Ibc</span>(<span class="ident">ibc_event</span>.<span class="ident">event_type</span>),
             <span class="ident">attributes</span>: <span class="ident">ibc_event</span>.<span class="ident">attributes</span>,
+        }
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">ProposalEvent</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Event</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">proposal_event</span>: <span class="ident">ProposalEvent</span>) -&gt; <span class="self">Self</span> {
+        <span class="self">Self</span> {
+            <span class="ident">event_type</span>: <span class="ident">EventType::Proposal</span>,
+            <span class="ident">attributes</span>: <span class="ident">proposal_event</span>.<span class="ident">attributes</span>,
         }
     }
 }

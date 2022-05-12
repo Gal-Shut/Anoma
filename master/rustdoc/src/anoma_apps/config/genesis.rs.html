@@ -856,6 +856,28 @@
 <span id="855">855</span>
 <span id="856">856</span>
 <span id="857">857</span>
+<span id="858">858</span>
+<span id="859">859</span>
+<span id="860">860</span>
+<span id="861">861</span>
+<span id="862">862</span>
+<span id="863">863</span>
+<span id="864">864</span>
+<span id="865">865</span>
+<span id="866">866</span>
+<span id="867">867</span>
+<span id="868">868</span>
+<span id="869">869</span>
+<span id="870">870</span>
+<span id="871">871</span>
+<span id="872">872</span>
+<span id="873">873</span>
+<span id="874">874</span>
+<span id="875">875</span>
+<span id="876">876</span>
+<span id="877">877</span>
+<span id="878">878</span>
+<span id="879">879</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The parameters used for the chain&#39;s genesis</span>
 
 <span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
@@ -865,6 +887,7 @@
 <span class="kw">use</span> <span class="ident">anoma::ledger::governance::parameters::GovParams</span>;
 <span class="kw">use</span> <span class="ident">anoma::ledger::parameters::Parameters</span>;
 <span class="kw">use</span> <span class="ident">anoma::ledger::pos</span>::{<span class="ident">GenesisValidator</span>, <span class="ident">PosParams</span>};
+<span class="kw">use</span> <span class="ident">anoma::ledger::treasury::parameters::TreasuryParams</span>;
 <span class="kw">use</span> <span class="ident">anoma::types::address::Address</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dev&quot;</span>))]</span>
 <span class="kw">use</span> <span class="ident">anoma::types::chain::ChainId</span>;
@@ -887,6 +910,7 @@
     <span class="kw">use</span> <span class="ident">anoma::ledger::parameters</span>::{<span class="ident">EpochDuration</span>, <span class="ident">Parameters</span>};
     <span class="kw">use</span> <span class="ident">anoma::ledger::pos::types::BasisPoints</span>;
     <span class="kw">use</span> <span class="ident">anoma::ledger::pos</span>::{<span class="ident">GenesisValidator</span>, <span class="ident">PosParams</span>};
+    <span class="kw">use</span> <span class="ident">anoma::ledger::treasury::parameters::TreasuryParams</span>;
     <span class="kw">use</span> <span class="ident">anoma::types::address::Address</span>;
     <span class="kw">use</span> <span class="ident">anoma::types::key::dkg_session_keys::DkgPublicKey</span>;
     <span class="kw">use</span> <span class="ident">anoma::types::key</span>::<span class="kw-2">*</span>;
@@ -970,13 +994,15 @@
         <span class="comment">// PoS parameters</span>
         <span class="kw">pub</span> <span class="ident">pos_params</span>: <span class="ident">PosParamsConfig</span>,
         <span class="comment">// Governance parameters</span>
-        <span class="kw">pub</span> <span class="ident">gov_params</span>: <span class="ident">GovernanceParamasConfig</span>,
+        <span class="kw">pub</span> <span class="ident">gov_params</span>: <span class="ident">GovernanceParamsConfig</span>,
+        <span class="comment">// Treasury parameters</span>
+        <span class="kw">pub</span> <span class="ident">treasury_params</span>: <span class="ident">TreasuryParamasConfig</span>,
         <span class="comment">// Wasm definitions</span>
         <span class="kw">pub</span> <span class="ident">wasm</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">WasmConfig</span><span class="op">&gt;</span>,
     }
 
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">GovernanceParamasConfig</span> {
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">GovernanceParamsConfig</span> {
         <span class="comment">// Min funds to stake to submit a proposal</span>
         <span class="comment">// XXX: u64 doesn&#39;t work with toml-rs!</span>
         <span class="kw">pub</span> <span class="ident">min_proposal_fund</span>: <span class="ident">u64</span>,
@@ -991,7 +1017,14 @@
         <span class="kw">pub</span> <span class="ident">max_proposal_content_size</span>: <span class="ident">u64</span>,
         <span class="comment">// Minimum number of epoch between end and grace epoch</span>
         <span class="comment">// XXX: u64 doesn&#39;t work with toml-rs!</span>
-        <span class="kw">pub</span> <span class="ident">min_grace_epoch</span>: <span class="ident">u64</span>,
+        <span class="kw">pub</span> <span class="ident">min_proposal_grace_epochs</span>: <span class="ident">u64</span>,
+    }
+
+    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TreasuryParamasConfig</span> {
+        <span class="comment">// Maximum funds that can be moved from treasury in a single transfer</span>
+        <span class="comment">// XXX: u64 doesn&#39;t work with toml-rs!</span>
+        <span class="kw">pub</span> <span class="ident">max_proposal_fund_transfer</span>: <span class="ident">u64</span>,
     }
 
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
@@ -1375,11 +1408,19 @@
         };
 
         <span class="kw">let</span> <span class="ident">gov_params</span> <span class="op">=</span> <span class="ident">GovParams</span> {
-            <span class="ident">min_proposal_fund</span>: <span class="number">500</span>,
-            <span class="ident">max_proposal_code_size</span>: <span class="number">300</span>,
-            <span class="ident">min_proposal_period</span>: <span class="number">3</span>,
-            <span class="ident">max_proposal_content_size</span>: <span class="number">10_000</span>,
-            <span class="ident">min_proposal_grace_epochs</span>: <span class="number">6</span>,
+            <span class="ident">min_proposal_fund</span>: <span class="ident">config</span>.<span class="ident">gov_params</span>.<span class="ident">min_proposal_fund</span>,
+            <span class="ident">max_proposal_code_size</span>: <span class="ident">config</span>.<span class="ident">gov_params</span>.<span class="ident">max_proposal_code_size</span>,
+            <span class="ident">min_proposal_period</span>: <span class="ident">config</span>.<span class="ident">gov_params</span>.<span class="ident">min_proposal_period</span>,
+            <span class="ident">max_proposal_content_size</span>: <span class="ident">config</span>
+                .<span class="ident">gov_params</span>
+                .<span class="ident">max_proposal_content_size</span>,
+            <span class="ident">min_proposal_grace_epochs</span>: <span class="ident">config</span>
+                .<span class="ident">gov_params</span>
+                .<span class="ident">min_proposal_grace_epochs</span>,
+        };
+
+        <span class="kw">let</span> <span class="ident">treasury_params</span> <span class="op">=</span> <span class="ident">TreasuryParams</span> {
+            <span class="ident">max_proposal_fund_transfer</span>: <span class="number">10_000</span>,
         };
 
         <span class="kw">let</span> <span class="ident">pos_params</span> <span class="op">=</span> <span class="ident">PosParams</span> {
@@ -1408,6 +1449,7 @@
             <span class="ident">parameters</span>,
             <span class="ident">pos_params</span>,
             <span class="ident">gov_params</span>,
+            <span class="ident">treasury_params</span>,
         };
         <span class="ident">genesis</span>.<span class="ident">init</span>();
         <span class="ident">genesis</span>
@@ -1442,6 +1484,7 @@
     <span class="kw">pub</span> <span class="ident">parameters</span>: <span class="ident">Parameters</span>,
     <span class="kw">pub</span> <span class="ident">pos_params</span>: <span class="ident">PosParams</span>,
     <span class="kw">pub</span> <span class="ident">gov_params</span>: <span class="ident">GovParams</span>,
+    <span class="kw">pub</span> <span class="ident">treasury_params</span>: <span class="ident">TreasuryParams</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">Genesis</span> {
@@ -1594,7 +1637,7 @@
     <span class="kw">let</span> <span class="ident">parameters</span> <span class="op">=</span> <span class="ident">Parameters</span> {
         <span class="ident">epoch_duration</span>: <span class="ident">EpochDuration</span> {
             <span class="ident">min_num_of_blocks</span>: <span class="number">10</span>,
-            <span class="ident">min_duration</span>: <span class="ident">anoma::types::time::Duration::minutes</span>(<span class="number">1</span>).<span class="ident">into</span>(),
+            <span class="ident">min_duration</span>: <span class="ident">anoma::types::time::Duration::seconds</span>(<span class="number">60</span>).<span class="ident">into</span>(),
         },
         <span class="ident">max_expected_time_per_block</span>: <span class="ident">anoma::types::time::DurationSecs</span>(<span class="number">30</span>),
         <span class="ident">vp_whitelist</span>: <span class="macro">vec!</span>[],
@@ -1677,6 +1720,7 @@
         <span class="ident">parameters</span>,
         <span class="ident">pos_params</span>: <span class="ident">PosParams::default</span>(),
         <span class="ident">gov_params</span>: <span class="ident">GovParams::default</span>(),
+        <span class="ident">treasury_params</span>: <span class="ident">TreasuryParams::default</span>(),
     }
 }
 

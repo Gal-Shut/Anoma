@@ -1,1 +1,1 @@
-initSidebarItems({"constant":[["ADDRESS","Internal governance address"]],"enum":[["Error",""]],"mod":[["parameters","governance parameters"],["storage","governance storage"]],"struct":[["GovernanceVp","Governance VP"]],"type":[["Result","Governance functions result"]]});
+initSidebarItems({"mod":[["parameters","governance parameters"],["storage","governance storage"],["utils","utility function"],["vp","vp functions"]],"struct":[["GovernanceVp","Governance VP"]]});

@@ -464,6 +464,7 @@ re-checked when it has been validated at some previous level.</p>
 <ul>
 <li>Minimum number of blocks in an epoch</li>
 <li>Minimum duration of an epoch</li>
+<li>Maximum expected time per block </li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="epochs"><a class="header" href="#epochs">Epochs</a></h1>
 <p>An epoch is a range of blocks whose length is determined by the <a href="explore/design/ledger/./parameters.html#epoch-duration">epoch duration protocol parameter</a>: minimum epoch duration and minimum number of blocks in an epoch. They are identified by consecutive natural numbers starting at 0.</p>
@@ -2914,6 +2915,7 @@ state may be comprised of keys with a format specified above and values of arbit
 <tr><td>5</td><td>IbcBurn</td><td><a href="specs/encoding.html#internaladdressibcburn">InternalAddressIbcBurn</a></td></tr>
 <tr><td>6</td><td>IbcMint</td><td><a href="specs/encoding.html#internaladdressibcmint">InternalAddressIbcMint</a></td></tr>
 <tr><td>7</td><td>Governance</td><td><a href="specs/encoding.html#internaladdressgovernance">InternalAddressGovernance</a></td></tr>
+<tr><td>8</td><td>Treasury</td><td><a href="specs/encoding.html#internaladdresstreasury">InternalAddressTreasury</a></td></tr>
 </tbody></table>
 <h4 id="internaladdressgovernance"><a class="header" href="#internaladdressgovernance">InternalAddressGovernance</a></h4>
 <p>Empty struct (unit)</p>
@@ -2933,6 +2935,8 @@ state may be comprised of keys with a format specified above and values of arbit
 <h4 id="internaladdresspos"><a class="header" href="#internaladdresspos">InternalAddressPoS</a></h4>
 <p>Empty struct (unit)</p>
 <h4 id="internaladdressposslashpool"><a class="header" href="#internaladdressposslashpool">InternalAddressPosSlashPool</a></h4>
+<p>Empty struct (unit)</p>
+<h4 id="internaladdresstreasury"><a class="header" href="#internaladdresstreasury">InternalAddressTreasury</a></h4>
 <p>Empty struct (unit)</p>
 <h4 id="key"><a class="header" href="#key">Key</a></h4>
 <p>Struct with named fields</p>
