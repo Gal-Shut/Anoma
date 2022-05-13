@@ -2855,7 +2855,7 @@ dependencies = [
 [[package]]
 name = "ics23"
 version = "0.7.0"
-source = "git+https://github.com/heliaxdev/ics23?branch=yuji/for_smt_0.7#00fb3be7efe2777a2aecdf19381fc707230aa070"
+source = "git+https://github.com/heliaxdev/ics23?branch=yuji/for_smt_0.7#a5f06ab107a962310e78423a3fcbfb63e9fe47e7"
 dependencies = [
  "anyhow",
  "bytes 1.1.0",

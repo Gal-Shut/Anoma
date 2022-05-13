@@ -298,10 +298,6 @@ impl<H: StorageHasher + Default> MerkleTree<H> {
         let spec = sparse_merkle_tree::proof_ics23::get_spec(H::hash_op());
         let sub_tree_spec = spec.clone();
         let base_tree_spec = spec;
-        // let base_tree_spec = ProofSpec {
-        //    leaf_spec: Some(self.base_leaf_spec()),
-        //    ..spec
-        //};
         vec![sub_tree_spec, base_tree_spec]
     }
 }

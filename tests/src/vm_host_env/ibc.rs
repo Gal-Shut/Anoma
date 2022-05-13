@@ -70,7 +70,7 @@ use anoma::tendermint::hash::{AppHash, Hash as TmHash};
 use anoma::tendermint::time::Time as TmTime;
 use anoma::tendermint_proto::Protobuf;
 use anoma::types::address::{self, Address, InternalAddress};
-use anoma::types::ibc::data::FungibleTokenPacketData;
+use anoma::types::ibc::data::{FungibleTokenPacketData, PacketAck};
 use anoma::types::ibc::IbcEvent;
 use anoma::types::storage::{BlockHash, BlockHeight, Key};
 use anoma::types::time::Rfc3339String;
@@ -640,7 +640,7 @@ pub fn msg_packet_recv(packet: Packet) -> MsgRecvPacket {
 pub fn msg_packet_ack(packet: Packet) -> MsgAcknowledgement {
     MsgAcknowledgement {
         packet,
-        acknowledgement: vec![0].into(),
+        acknowledgement: PacketAck::result_success().encode_to_vec().into(),
         proofs: dummy_proofs(),
         signer: Signer::new("test"),
     }
@@ -657,7 +657,7 @@ pub fn received_packet(
     let timeout_timestamp =
         (Timestamp::now() + Duration::from_secs(100)).unwrap();
     let data = FungibleTokenPacketData {
-        denomination: token,
+        denom: token,
         amount: 100u64.to_string(),
         sender: address::testing::gen_established_address().to_string(),
         receiver: receiver.to_string(),
