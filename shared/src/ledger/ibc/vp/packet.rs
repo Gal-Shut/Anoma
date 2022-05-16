@@ -18,7 +18,8 @@ use crate::ibc::core::ics04_channel::context::ChannelReader;
 use crate::ibc::core::ics04_channel::error::Error as Ics04Error;
 use crate::ibc::core::ics04_channel::handler::verify::{
     verify_channel_proofs, verify_next_sequence_recv,
-    verify_packet_acknowledgement_proofs, verify_packet_recv_proofs,
+    verify_packet_acknowledgement_proofs, verify_packet_receipt_absence,
+    verify_packet_recv_proofs,
 };
 use crate::ibc::core::ics04_channel::msgs::acknowledgement::{
     Acknowledgement, MsgAcknowledgement,
@@ -644,17 +645,16 @@ where
                 Err(e) => Err(Error::ProofVerificationFailure(e)),
             }
         } else {
-            Ok(())
-            // match verify_packet_receipt_absence(
-            //    self,
-            //    height,
-            //    &connection,
-            //    packet,
-            //    &proofs,
-            //) {
-            //    Ok(_) => Ok(()),
-            //    Err(e) => Err(Error::ProofVerificationFailure(e)),
-            //}
+            match verify_packet_receipt_absence(
+                self,
+                height,
+                &connection,
+                packet,
+                &proofs,
+            ) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(Error::ProofVerificationFailure(e)),
+            }
         }
     }
 
