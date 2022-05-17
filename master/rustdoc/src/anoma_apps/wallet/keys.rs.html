@@ -235,6 +235,10 @@
 <span id="234">234</span>
 <span id="235">235</span>
 <span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Cryptographic keys for digital signatures support for the wallet.</span>
 
 <span class="kw">use</span> <span class="ident">std::fmt::Display</span>;
@@ -393,16 +397,20 @@
         }
     }
 
-    <span class="doccomment">/// Get a raw keypair from a stored keypair. If the keypair is encrypted, a</span>
-    <span class="doccomment">/// password will be prompted from stdin.</span>
+    <span class="doccomment">/// Get a raw keypair from a stored keypair. If the keypair is encrypted and</span>
+    <span class="doccomment">/// no password is provided in the argument, a password will be prompted</span>
+    <span class="doccomment">/// from stdin.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">decrypt</span>: <span class="ident">bool</span>,
+        <span class="ident">password</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">common::SecretKey</span><span class="op">&gt;</span>, <span class="ident">DecryptionError</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">StoredKeypair::Encrypted</span>(<span class="ident">encrypted_keypair</span>) =&gt; {
                 <span class="kw">if</span> <span class="ident">decrypt</span> {
-                    <span class="kw">let</span> <span class="ident">password</span> <span class="op">=</span> <span class="ident">read_password</span>(<span class="string">&quot;Enter decryption password: &quot;</span>);
+                    <span class="kw">let</span> <span class="ident">password</span> <span class="op">=</span> <span class="ident">password</span>.<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+                        <span class="ident">read_password</span>(<span class="string">&quot;Enter decryption password: &quot;</span>)
+                    });
                     <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">encrypted_keypair</span>.<span class="ident">decrypt</span>(<span class="ident">password</span>)<span class="question-mark">?</span>;
                     <span class="prelude-val">Ok</span>(<span class="ident">Rc::new</span>(<span class="ident">key</span>))
                 } <span class="kw">else</span> {

@@ -483,10 +483,52 @@
 <span id="482">482</span>
 <span id="483">483</span>
 <span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
 <span class="kw">use</span> <span class="ident">std::fs</span>;
 <span class="kw">use</span> <span class="ident">std::io::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="self">self</span>, <span class="ident">ErrorKind</span>, <span class="ident">Write</span>};
+<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="self">self</span>, <span class="ident">Write</span>};
 <span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
 <span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
 <span class="kw">use</span> <span class="ident">std::str::FromStr</span>;
@@ -501,8 +543,9 @@
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::alias::Alias</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::alias</span>::{<span class="self">self</span>, <span class="ident">Alias</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::keys::StoredKeypair</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::pre_genesis</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::cli</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::genesis::genesis_config::GenesisConfig</span>;
 
@@ -606,7 +649,7 @@
 
     <span class="doccomment">/// Load the store file or create a new one without any keys or addresses.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load_or_new</span>(<span class="ident">store_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">LoadStoreError</span><span class="op">&gt;</span> {
-        <span class="ident"><span class="self">Self</span>::load_or_new_aux</span>(<span class="ident">store_dir</span>, <span class="op">|</span><span class="op">|</span> {
+        <span class="ident"><span class="self">Self</span>::load</span>(<span class="ident">store_dir</span>).<span class="ident">or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> {
             <span class="kw">let</span> <span class="ident">store</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::default</span>();
             <span class="ident">store</span>.<span class="ident">save</span>(<span class="ident">store_dir</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> {
                 <span class="ident">LoadStoreError::StoreNewWallet</span>(<span class="ident">err</span>.<span class="ident">to_string</span>())
@@ -621,7 +664,7 @@
         <span class="ident">store_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>,
         <span class="ident">load_genesis</span>: <span class="kw">impl</span> <span class="ident">FnOnce</span>() -&gt; <span class="ident">GenesisConfig</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">LoadStoreError</span><span class="op">&gt;</span> {
-        <span class="ident"><span class="self">Self</span>::load_or_new_aux</span>(<span class="ident">store_dir</span>, <span class="op">|</span><span class="op">|</span> {
+        <span class="ident"><span class="self">Self</span>::load</span>(<span class="ident">store_dir</span>).<span class="ident">or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> {
             <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dev&quot;</span>))]</span>
             <span class="kw">let</span> <span class="ident">store</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::new</span>(<span class="ident">load_genesis</span>());
             <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dev&quot;</span>)]</span>
@@ -637,11 +680,8 @@
         })
     }
 
-    <span class="doccomment">/// Load the store file or create a new with the provided function.</span>
-    <span class="kw">fn</span> <span class="ident">load_or_new_aux</span>(
-        <span class="ident">store_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>,
-        <span class="ident">new_store</span>: <span class="kw">impl</span> <span class="ident">FnOnce</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">LoadStoreError</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">LoadStoreError</span><span class="op">&gt;</span> {
+    <span class="doccomment">/// Attempt to load the store file.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load</span>(<span class="ident">store_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">LoadStoreError</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">wallet_file</span> <span class="op">=</span> <span class="ident">wallet_file</span>(<span class="ident">store_dir</span>);
         <span class="kw">match</span> <span class="ident">FileLock::lock</span>(
             <span class="ident">wallet_file</span>.<span class="ident">to_str</span>().<span class="ident">unwrap</span>(),
@@ -658,19 +698,10 @@
                 })<span class="question-mark">?</span>;
                 <span class="ident">Store::decode</span>(<span class="ident">store</span>).<span class="ident">map_err</span>(<span class="ident">LoadStoreError::Decode</span>)
             }
-            <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; <span class="kw">match</span> <span class="ident">err</span>.<span class="ident">kind</span>() {
-                <span class="ident">ErrorKind::NotFound</span> =&gt; {
-                    <span class="macro">println!</span>(
-                        <span class="string">&quot;No wallet found at {:?}. Creating a new one.&quot;</span>,
-                        <span class="ident">wallet_file</span>
-                    );
-                    <span class="ident">new_store</span>()
-                }
-                <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">LoadStoreError::ReadWallet</span>(
-                    <span class="ident">wallet_file</span>.<span class="ident">to_string_lossy</span>().<span class="ident">into_owned</span>(),
-                    <span class="ident">err</span>.<span class="ident">to_string</span>(),
-                )),
-            },
+            <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">LoadStoreError::ReadWallet</span>(
+                <span class="ident">wallet_file</span>.<span class="ident">to_string_lossy</span>().<span class="ident">into_owned</span>(),
+                <span class="ident">err</span>.<span class="ident">to_string</span>(),
+            )),
         }
     }
 
@@ -748,14 +779,6 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">addresses</span>
     }
 
-    <span class="kw">fn</span> <span class="ident">generate_keypair</span>() -&gt; <span class="ident">common::SecretKey</span> {
-        <span class="kw">use</span> <span class="ident">rand::rngs::OsRng</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">csprng</span> <span class="op">=</span> <span class="ident">OsRng</span> {};
-        <span class="ident">ed25519::SigScheme::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">csprng</span>)
-            .<span class="ident">try_to_sk</span>()
-            .<span class="ident">unwrap</span>()
-    }
-
     <span class="doccomment">/// Generate a new keypair and insert it into the store with the provided</span>
     <span class="doccomment">/// alias. If none provided, the alias will be the public key hash.</span>
     <span class="doccomment">/// If no password is provided, the keypair will be stored raw without</span>
@@ -766,10 +789,9 @@
         <span class="ident">alias</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
         <span class="ident">password</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
     ) -&gt; (<span class="ident">Alias</span>, <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">common::SecretKey</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="ident">keypair</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::generate_keypair</span>();
-        <span class="kw">let</span> <span class="ident">pkh</span>: <span class="ident">PublicKeyHash</span> <span class="op">=</span> <span class="ident">PublicKeyHash::from</span>(<span class="kw-2">&amp;</span><span class="ident">keypair</span>.<span class="ident">ref_to</span>());
-        <span class="kw">let</span> (<span class="ident">keypair_to_store</span>, <span class="ident">raw_keypair</span>) <span class="op">=</span>
-            <span class="ident">StoredKeypair::new</span>(<span class="ident">keypair</span>, <span class="ident">password</span>);
+        <span class="kw">let</span> <span class="ident">sk</span> <span class="op">=</span> <span class="ident">gen_sk</span>();
+        <span class="kw">let</span> <span class="ident">pkh</span>: <span class="ident">PublicKeyHash</span> <span class="op">=</span> <span class="ident">PublicKeyHash::from</span>(<span class="kw-2">&amp;</span><span class="ident">sk</span>.<span class="ident">ref_to</span>());
+        <span class="kw">let</span> (<span class="ident">keypair_to_store</span>, <span class="ident">raw_keypair</span>) <span class="op">=</span> <span class="ident">StoredKeypair::new</span>(<span class="ident">sk</span>, <span class="ident">password</span>);
         <span class="kw">let</span> <span class="ident">address</span> <span class="op">=</span> <span class="ident">Address::Implicit</span>(<span class="ident">ImplicitAddress</span>(<span class="ident">pkh</span>.<span class="ident">clone</span>()));
         <span class="kw">let</span> <span class="ident">alias</span>: <span class="ident">Alias</span> <span class="op">=</span> <span class="ident">alias</span>.<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">pkh</span>.<span class="ident">clone</span>().<span class="ident">into</span>()).<span class="ident">into</span>();
         <span class="kw">if</span> <span class="self">self</span>
@@ -793,8 +815,7 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">gen_validator_keys</span>(
         <span class="ident">protocol_keypair</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">common::SecretKey</span><span class="op">&gt;</span>,
     ) -&gt; <span class="ident">ValidatorKeys</span> {
-        <span class="kw">let</span> <span class="ident">protocol_keypair</span> <span class="op">=</span>
-            <span class="ident">protocol_keypair</span>.<span class="ident">unwrap_or_else</span>(<span class="ident"><span class="self">Self</span>::generate_keypair</span>);
+        <span class="kw">let</span> <span class="ident">protocol_keypair</span> <span class="op">=</span> <span class="ident">protocol_keypair</span>.<span class="ident">unwrap_or_else</span>(<span class="ident">gen_sk</span>);
         <span class="kw">let</span> <span class="ident">dkg_keypair</span> <span class="op">=</span> <span class="ident">ferveo_common::Keypair</span>::<span class="op">&lt;</span><span class="ident">EllipticCurve</span><span class="op">&gt;</span><span class="ident">::new</span>(
             <span class="kw-2">&amp;mut</span> <span class="ident">StdRng::from_entropy</span>(),
         );
@@ -881,6 +902,60 @@
         <span class="prelude-val">Some</span>(<span class="ident">alias</span>)
     }
 
+    <span class="doccomment">/// Extend this store from pre-genesis validator wallet.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">extend_from_pre_genesis_validator</span>(
+        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
+        <span class="ident">validator_address</span>: <span class="ident">Address</span>,
+        <span class="ident">validator_alias</span>: <span class="ident">Alias</span>,
+        <span class="ident">other</span>: <span class="ident">pre_genesis::ValidatorWallet</span>,
+    ) {
+        <span class="kw">let</span> <span class="ident">account_key_alias</span> <span class="op">=</span> <span class="ident">alias::validator_key</span>(<span class="kw-2">&amp;</span><span class="ident">validator_alias</span>);
+        <span class="kw">let</span> <span class="ident">rewards_key_alias</span> <span class="op">=</span> <span class="ident">alias::validator_rewards_key</span>(<span class="kw-2">&amp;</span><span class="ident">validator_alias</span>);
+        <span class="kw">let</span> <span class="ident">consensus_key_alias</span> <span class="op">=</span>
+            <span class="ident">alias::validator_consensus_key</span>(<span class="kw-2">&amp;</span><span class="ident">validator_alias</span>);
+        <span class="kw">let</span> <span class="ident">tendermint_node_key_alias</span> <span class="op">=</span>
+            <span class="ident">alias::validator_tendermint_node_key</span>(<span class="kw-2">&amp;</span><span class="ident">validator_alias</span>);
+
+        <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> [
+            (<span class="ident">account_key_alias</span>.<span class="ident">clone</span>(), <span class="ident">other</span>.<span class="ident">store</span>.<span class="ident">account_key</span>),
+            (<span class="ident">rewards_key_alias</span>.<span class="ident">clone</span>(), <span class="ident">other</span>.<span class="ident">store</span>.<span class="ident">rewards_key</span>),
+            (<span class="ident">consensus_key_alias</span>.<span class="ident">clone</span>(), <span class="ident">other</span>.<span class="ident">store</span>.<span class="ident">consensus_key</span>),
+            (
+                <span class="ident">tendermint_node_key_alias</span>.<span class="ident">clone</span>(),
+                <span class="ident">other</span>.<span class="ident">store</span>.<span class="ident">tendermint_node_key</span>,
+            ),
+        ];
+        <span class="self">self</span>.<span class="ident">keys</span>.<span class="ident">extend</span>(<span class="ident">keys</span>.<span class="ident">into_iter</span>());
+
+        <span class="kw">let</span> <span class="ident">account_pk</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">account_key</span>.<span class="ident">ref_to</span>();
+        <span class="kw">let</span> <span class="ident">rewards_pk</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">rewards_key</span>.<span class="ident">ref_to</span>();
+        <span class="kw">let</span> <span class="ident">consensus_pk</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">consensus_key</span>.<span class="ident">ref_to</span>();
+        <span class="kw">let</span> <span class="ident">tendermint_node_pk</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">tendermint_node_key</span>.<span class="ident">ref_to</span>();
+        <span class="kw">let</span> <span class="ident">addresses</span> <span class="op">=</span> [
+            (<span class="ident">account_key_alias</span>.<span class="ident">clone</span>(), (<span class="kw-2">&amp;</span><span class="ident">account_pk</span>).<span class="ident">into</span>()),
+            (<span class="ident">rewards_key_alias</span>.<span class="ident">clone</span>(), (<span class="kw-2">&amp;</span><span class="ident">rewards_pk</span>).<span class="ident">into</span>()),
+            (<span class="ident">consensus_key_alias</span>.<span class="ident">clone</span>(), (<span class="kw-2">&amp;</span><span class="ident">consensus_pk</span>).<span class="ident">into</span>()),
+            (
+                <span class="ident">tendermint_node_key_alias</span>.<span class="ident">clone</span>(),
+                (<span class="kw-2">&amp;</span><span class="ident">tendermint_node_pk</span>).<span class="ident">into</span>(),
+            ),
+        ];
+        <span class="self">self</span>.<span class="ident">addresses</span>.<span class="ident">extend</span>(<span class="ident">addresses</span>.<span class="ident">into_iter</span>());
+
+        <span class="kw">let</span> <span class="ident">pkhs</span> <span class="op">=</span> [
+            ((<span class="kw-2">&amp;</span><span class="ident">account_pk</span>).<span class="ident">into</span>(), <span class="ident">account_key_alias</span>),
+            ((<span class="kw-2">&amp;</span><span class="ident">rewards_pk</span>).<span class="ident">into</span>(), <span class="ident">rewards_key_alias</span>),
+            ((<span class="kw-2">&amp;</span><span class="ident">consensus_pk</span>).<span class="ident">into</span>(), <span class="ident">consensus_key_alias</span>),
+            ((<span class="kw-2">&amp;</span><span class="ident">tendermint_node_pk</span>).<span class="ident">into</span>(), <span class="ident">tendermint_node_key_alias</span>),
+        ];
+        <span class="self">self</span>.<span class="ident">pkhs</span>.<span class="ident">extend</span>(<span class="ident">pkhs</span>.<span class="ident">into_iter</span>());
+
+        <span class="self">self</span>.<span class="ident">validator_data</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">ValidatorData</span> {
+            <span class="ident">address</span>: <span class="ident">validator_address</span>,
+            <span class="ident">keys</span>: <span class="ident">other</span>.<span class="ident">store</span>.<span class="ident">validator_keys</span>,
+        });
+    }
+
     <span class="kw">fn</span> <span class="ident">decode</span>(<span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">toml::de::Error</span><span class="op">&gt;</span> {
         <span class="ident">toml::from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>)
     }
@@ -949,6 +1024,15 @@
 <span class="doccomment">/// Get the path to the wallet store.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wallet_file</span>(<span class="ident">store_dir</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>) -&gt; <span class="ident">PathBuf</span> {
     <span class="ident">store_dir</span>.<span class="ident">as_ref</span>().<span class="ident">join</span>(<span class="ident">FILE_NAME</span>)
+}
+
+<span class="doccomment">/// Generate a new secret key.</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">gen_sk</span>() -&gt; <span class="ident">common::SecretKey</span> {
+    <span class="kw">use</span> <span class="ident">rand::rngs::OsRng</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">csprng</span> <span class="op">=</span> <span class="ident">OsRng</span> {};
+    <span class="ident">ed25519::SigScheme::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">csprng</span>)
+        .<span class="ident">try_to_sk</span>()
+        .<span class="ident">unwrap</span>()
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dev&quot;</span>))]</span>
