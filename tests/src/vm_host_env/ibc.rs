@@ -356,7 +356,7 @@ pub fn prepare_opened_channel(
     writes.insert(key, bytes);
     // channel
     let channel_id = channel_id(0);
-    let port_channel_id = port_channel_id(port_id.clone(), channel_id.clone());
+    let port_channel_id = port_channel_id(port_id.clone(), channel_id);
     let key = channel_key(&port_channel_id);
     let msg = msg_channel_open_init(port_id.clone(), conn_id.clone());
     let mut channel = msg.channel;
@@ -427,7 +427,7 @@ pub fn msg_connection_open_init(client_id: ClientId) -> MsgConnectionOpenInit {
     MsgConnectionOpenInit {
         client_id,
         counterparty: dummy_connection_counterparty(),
-        version: ConnVersion::default(),
+        version: None,
         delay_period: Duration::new(100, 0),
         signer: Signer::new("test"),
     }
@@ -531,10 +531,9 @@ pub fn msg_channel_open_ack(
     MsgChannelOpenAck {
         port_id,
         channel_id,
-        counterparty_channel_id: dummy_channel_counterparty()
+        counterparty_channel_id: *dummy_channel_counterparty()
             .channel_id()
-            .unwrap()
-            .clone(),
+            .unwrap(),
         counterparty_version: ChanVersion::ics20(),
         proofs: dummy_proofs(),
         signer: Signer::new("test"),
@@ -593,9 +592,8 @@ fn dummy_channel(
 pub fn dummy_channel_counterparty() -> ChanCounterparty {
     let counterpart_port_id = PortId::from_str("counterpart_test_port")
         .expect("Creating a port ID failed");
-    let counterpart_channel_id =
-        ChannelId::from_str("counterpart_test_channel")
-            .expect("Creating a channel ID failed");
+    let counterpart_channel_id = ChannelId::from_str("channel-42")
+        .expect("Creating a channel ID failed");
     channel_counterparty(counterpart_port_id, counterpart_channel_id)
 }
 
@@ -642,7 +640,7 @@ pub fn msg_packet_recv(packet: Packet) -> MsgRecvPacket {
 pub fn msg_packet_ack(packet: Packet) -> MsgAcknowledgement {
     MsgAcknowledgement {
         packet,
-        acknowledgement: vec![0],
+        acknowledgement: vec![0].into(),
         proofs: dummy_proofs(),
         signer: Signer::new("test"),
     }
@@ -667,7 +665,7 @@ pub fn received_packet(
     Packet {
         sequence,
         source_port: counterparty.port_id().clone(),
-        source_channel: counterparty.channel_id().unwrap().clone(),
+        source_channel: *counterparty.channel_id().unwrap(),
         destination_port: port_id,
         destination_channel: channel_id,
         data: serde_json::to_vec(&data).unwrap(),
