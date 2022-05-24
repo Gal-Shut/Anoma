@@ -1,5 +1,6 @@
 //! Client RPC queries
 
+// FIXME: remove this file when finished porting to shared
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;

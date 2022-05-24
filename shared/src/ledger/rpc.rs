@@ -799,6 +799,79 @@ where
     }
 }
 
+/// Query the raw bytes of given storage key
+pub async fn query_raw_bytes<C>(
+    client: C,
+    storage_key: storage::Key,
+) -> Result<Vec<u8>>
+where
+    C: Client + Clone + Sync,
+{
+    let path = Path::Value(storage_key);
+    let data = vec![];
+    let response = client
+        .abci_query(Some(path.into()), data, None, false)
+        .await
+        .map_err(QueryError::ABCIQueryError)?;
+
+    match response.code {
+        Code::Ok => Ok(data),
+        Code::Err(err) => Err(QueryError::Format(response.info, err))
+    }
+}
+
+/// Check if a given address is a known delegator
+pub async fn is_delegator<C>(
+    client: C,
+    address: &Address,
+) -> Result<bool>
+where
+    C: Client + Clone + Sync
+{
+    let bonds_prefix = pos::bonds_for_source_prefix(address);
+    let bonds =
+        query_storage_prefix::<pos::Bonds>(client, bonds_prefix).await?;
+
+    Ok(bonds.is_some() && bonds.unwrap().count() > 0)
+}
+
+/// Check if a given address is a known delegator at a given Epoch
+pub async fn is_delegator_at<C>(
+    client: C,
+    address: &Address,
+    epoch: Epoch,
+) -> Result<bool>
+where
+    C: Client + Clone + Sync
+{
+    let key = pos::bonds_for_source_prefix(address);
+    let bonds_iter =
+        query_storage_prefix::<pos::Bonds>(client, key).await?;
+
+    match bonds_iter {
+        Some(mut bonds) => Ok(bonds.any(|(_, bond)| bond.get(epoch).is_some())),
+        None => Ok(false),
+    }
+}
+
+// FIXME: missing functions
+// query_proposal
+// get_token_balance
+// query_proposal_result
+// query_protocol_parameters
+// query_result
+// get_proposal_votes
+// get_proposal_offline_votes (dpends on is_delegator_at)
+// compute_tally
+// get_bond_amount_at
+// get_all_validators
+// get_total_staked_tokes
+// get_validator_stake
+// get_delegators_delegation
+// FIXME: add them, fix their calls and tests
+
+
+
 #[cfg(not(target_family = "wasm"))]
 #[cfg(test)]
 mod test_rpc {
