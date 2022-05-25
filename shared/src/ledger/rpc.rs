@@ -4,9 +4,11 @@
 //! dependency on socket2 (issue https://github.com/rust-lang/socket2/issues/268)
 
 use std::clone::Clone;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::marker::Sync;
+use std::fs::File;
+use std::path::PathBuf;
 
 use borsh::BorshDeserialize;
 use itertools::Itertools;
@@ -28,8 +30,10 @@ use tendermint_rpc_abci::{Client, Order};
 use tendermint_stable::abci::Code;
 
 use crate::ledger::pos::types::{Epoch as PosEpoch, VotingPower};
-use crate::ledger::pos::{self, BondId, Bonds, Slash, Slashes, Unbonds, ValidatorSets};
+use crate::ledger::pos::{self, BondId, Bonds, Slash, Slashes, Unbonds, ValidatorSets, ValidatorTotalDeltas};
+use crate::ledger::governance::utils::Votes;
 use crate::types::address::Address;
+use crate::types::governance::{OfflineProposal, OfflineVote, TallyResult};
 use crate::types::hash::Hash;
 use crate::types::key::*;
 pub use crate::types::rpc::{
@@ -614,7 +618,7 @@ where
     match response.code {
         Code::Ok => match T::try_from_slice(&response.value[..]) {
             Ok(value) => Ok(Some(value)),
-            Err(err) => Err(QueryError::Decoding(err)),
+            Err(err) => Err(QueryError::IOError(err)),
         },
         Code::Err(err) if err == 1 => Ok(None),
         Code::Err(err) => Err(QueryError::Format(response.info, err)),
@@ -651,7 +655,7 @@ where
                     };
                     Ok(Some(values.into_iter().filter_map(decode)))
                 }
-                Err(err) => Err(QueryError::Decoding(err)),
+                Err(err) => Err(QueryError::IOError(err)),
             }
         }
         Code::Err(err) if err == 1 => Ok(None),
@@ -674,7 +678,7 @@ where
     match response.code {
         Code::Ok => match bool::try_from_slice(&response.value[..]) {
             Ok(value) => Ok(value),
-            Err(err) => Err(QueryError::Decoding(err)),
+            Err(err) => Err(QueryError::IOError(err)),
         },
         Code::Err(err) => Err(QueryError::Format(response.info, err)),
     }
@@ -918,17 +922,203 @@ where
         .collect())
 }
 
+/// Query the total amount of staked tokens
+pub async fn get_total_staked_tokes<C>(
+    client: C,
+    epoch: Epoch,
+    validators: &[Address],
+) -> Result<Amount>
+where
+    C: Client + Clone + Sync
+{
+    let mut total = Amount::from(0);
+
+    for validator in validators {
+        total += get_validator_stake(client.clone(), epoch, validator).await?;
+    }
+
+    Ok(total)
+}
+
+async fn get_validator_stake<C>(
+    client: C,
+    epoch: Epoch,
+    validator: &Address,
+) -> Result<Amount>
+where
+    C: Client + Clone + Sync
+{
+    let total_voting_power_key = pos::validator_total_deltas_key(validator);
+    let total_voting_power = query_storage_value::<C, ValidatorTotalDeltas>(
+        client,
+        total_voting_power_key,
+    )
+    .await?.ok_or(QueryError::UndefinedTotalDeltas)?;
+
+    let epoched_total_voting_power = total_voting_power.get(epoch);
+
+    if let Some(epoched_total_voting_power) = epoched_total_voting_power {
+        Ok(Amount::from_change(epoched_total_voting_power))
+    } else {
+        Ok(Amount::from(0))
+    }
+}
+
+/// Query the delegation addresses of the given delegator
+pub async fn get_delegators_delegation<C>(
+    client: C,
+    address: &Address,
+    _epoch: Epoch,
+) -> Result<Vec<Address>>
+where
+    C: Client + Clone + Sync
+{
+    let key = pos::bonds_for_source_prefix(address);
+    let bonds_iter =
+        query_storage_prefix::<C, Bonds>(client, key).await?;
+
+    let mut delegation_addresses: Vec<Address> = Vec::new();
+    if let Some(bonds) = bonds_iter {
+        for (key, _epoched_amount) in bonds {
+            let validator_address = pos::get_validator_address_from_bond(&key).ok_or(QueryError::EmptyDelegationKey)?;
+            delegation_addresses.push(validator_address);
+        }
+    }
+
+    Ok(delegation_addresses)
+}
+
+/// Compute the result of a proposal
+pub async fn compute_tally<C>(
+    client: C,
+    epoch: Epoch,
+    votes: Votes,
+) -> Result<TallyResult>
+where
+    C: Client + Clone + Sync
+{
+    let validators = get_all_validators(client.clone(), epoch).await?;
+    let total_stacked_tokens =
+        get_total_staked_tokes(client, epoch, &validators).await?;
+
+    let Votes {
+        yay_validators,
+        yay_delegators,
+        nay_delegators,
+    } = votes;
+
+    let mut total_yay_stacked_tokens = Amount::from(0);
+    for (_, amount) in yay_validators.clone().into_iter() {
+        total_yay_stacked_tokens += amount;
+    }
+
+    // YAY: Add delegator amount whose validator didn't vote / voted nay
+    for (validator_address, amount) in yay_delegators.into_iter() {
+        if !yay_validators.contains_key(&validator_address) {
+            total_yay_stacked_tokens += amount;
+        }
+    }
+
+    // NAY: Remove delegator amount whose validator validator vote yay
+    for (validator_address, amount) in nay_delegators.into_iter() {
+        if yay_validators.contains_key(&validator_address) {
+            total_yay_stacked_tokens -= amount;
+        }
+    }
+
+    if 3 * total_yay_stacked_tokens >= 2 * total_stacked_tokens {
+        Ok(TallyResult::Passed)
+    } else {
+        Ok(TallyResult::Rejected)
+    }
+}
+
+/// Compute the votes of an offline proposal
+pub async fn get_proposal_offline_votes<C>(
+    client: C,
+    proposal: OfflineProposal,
+    files: HashSet<PathBuf>,
+) -> Result<Votes>
+where
+    C: Client + Clone + Sync
+{
+    let validators = get_all_validators(client.clone(), proposal.tally_epoch).await?;
+
+    let proposal_hash = proposal.compute_hash();
+
+    let mut yay_validators: HashMap<Address, Amount> = HashMap::new();
+    let mut yay_delegators: HashMap<Address, Amount> = HashMap::new();
+    let mut nay_delegators: HashMap<Address, Amount> = HashMap::new();
+
+    for path in files {
+        let file = File::open(&path)?;
+        let proposal_vote: OfflineVote = serde_json::from_reader(file)?;
+
+        let key = pk_key(&proposal_vote.address);
+        let public_key = query_storage_value(client.clone(), key)
+            .await?.ok_or(QueryError::InexistentPubKey)?;
+
+        if !proposal_vote.proposal_hash.eq(&proposal_hash)
+            || !proposal_vote.check_signature(&public_key)
+        {
+            continue;
+        }
+
+        if proposal_vote.vote.is_yay()
+            && validators.contains(&proposal_vote.address)
+        {
+            let amount = get_validator_stake(
+                client.clone(),
+                proposal.tally_epoch,
+                &proposal_vote.address,
+            )
+            .await?;
+            yay_validators.insert(proposal_vote.address, amount);
+        } else if is_delegator_at(
+            client.clone(),
+            &proposal_vote.address,
+            proposal.tally_epoch,
+        )
+        .await?
+        {
+            let key = pos::bonds_for_source_prefix(&proposal_vote.address);
+            let bonds_iter =
+                query_storage_prefix::<C, Bonds>(client.clone(), key).await?;
+            if let Some(bonds) = bonds_iter {
+                for (key, epoched_amount) in bonds {
+                    let bond = epoched_amount
+                        .get(proposal.tally_epoch).ok_or(QueryError::UndefinedBond)?;
+                    let epoch = PosEpoch::from(
+                        proposal.tally_epoch.0,
+                    );
+                    let amount = *bond
+                        .deltas
+                        .get(&epoch).ok_or(QueryError::UndefinedDelegationAmount)?;
+                    let validator_address =
+                        pos::get_validator_address_from_bond(&key).ok_or(QueryError::EmptyDelegationKey)?;
+                    if proposal_vote.vote.is_yay() {
+                        yay_delegators.insert(validator_address, amount);
+                    } else {
+                        nay_delegators.insert(validator_address, amount);
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(Votes {
+        yay_validators,
+        yay_delegators,
+        nay_delegators,
+    })
+}
+
 // FIXME: missing functions
 // query_proposal
 // get_token_balance
 // query_proposal_result
 // query_protocol_parameters
 // get_proposal_votes
-// get_proposal_offline_votes (dpends on is_delegator_at)
-// compute_tally
-// get_total_staked_tokes
-// get_validator_stake
-// get_delegators_delegation
 // FIXME: add them, fix their calls and tests
 
 

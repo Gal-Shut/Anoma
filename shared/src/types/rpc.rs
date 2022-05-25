@@ -547,36 +547,51 @@ pub enum QueryError {
     /// General ABCI error
     #[error("Abci query failed: {0}")]
     ABCIQueryError(TError),
-    /// Invalid conversion from String
-    #[error("Error while casting value from String {0}")]
-    ConversionError(#[from] std::num::ParseIntError),
-    /// Decoding error
-    #[error("Error decoding the value: {0}")]
-    Decoding(#[from] std::io::Error),
-    /// Bad query format
-    #[error("Error in the query {0} (error code {1})")]
-    Format(String, u32),
-    /// Hash decoding error from bytes
-    #[error("{0}")]
-    FromHexError(#[from] hash::Error),
     /// Block not found
     #[error("Unable to find a block applying the given transaction hash {0}")]
     BlockNotFound(Hash),
+    /// Invalid conversion from String FIXME:
+    #[error("Error while casting value from String {0}")]
+    ConversionError(#[from] std::num::ParseIntError),
+    /// Empty delegation key
+    #[error("Delegation key should contain validator address")]
+    EmptyDelegationKey,
     /// Event not found
     #[error(
         "Unable to find the event corresponding to the given transaction hash \
          {0}"
     )]
     EventNotFound(Hash),
+    /// Bad query format
+    #[error("Error in the query {0} (error code {1})")]
+    Format(String, u32),
+    /// Hash decoding error from bytes
+    #[error("{0}")]
+    FromHexError(#[from] hash::Error),
+    /// Non-existing public key
+    #[error("Public key should exist")]
+    InexistentPubKey,
+    /// IOError
+    #[error("IOError: {0}")]
+    IOError(#[from] std::io::Error),
     /// Json error
-    #[error("Error with json path")]
+    #[error("Error with json path: {0}")]
     JsonError(#[from] jsonpath::JsonPathError),
-    /// Negative voting power delta
+    /// Negative voting power delta FIXME:
     #[error("The sum voting power deltas shouldn't be negative")]
     NegativeVotingPowerDeltas(#[from] std::num::TryFromIntError),
     /// serde_json error
     #[error("Couldn't load from serde value: {0}")]
     SerdeError(#[from] serde_json::Error),
+    /// Undefined bond
+    #[error("Delegation bond should be definied")]
+    UndefinedBond,
+    /// Undefined delegation amount
+    #[error("Delegation amount should be definied")]
+    UndefinedDelegationAmount,
+    /// Underfined total deltas
+    #[error("Total deltas should be defined")]
+    UndefinedTotalDeltas,
     /// Unset validator set
     #[error("Validator set should always be set")]
     UnsetValidatorSet,

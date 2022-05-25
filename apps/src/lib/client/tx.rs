@@ -692,11 +692,11 @@ pub async fn submit_vote_proposal(mut ctx: Context, args: args::VoteProposal) {
         match proposal_start_epoch {
             Some(epoch) => {
                 let mut delegation_addresses = rpc::get_delegators_delegation(
-                    &client,
+                    client.clone(),
                     &voter_address,
                     epoch,
                 )
-                .await;
+                .await; //FIXME: manage error here
 
                 // Optimize by quering if a vote from a validator
                 // is equal to ours. If so, we can avoid voting, but ONLY if we
