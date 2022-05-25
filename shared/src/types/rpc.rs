@@ -577,6 +577,9 @@ pub enum QueryError {
     /// serde_json error
     #[error("Couldn't load from serde value: {0}")]
     SerdeError(#[from] serde_json::Error),
+    /// Unset validator set
+    #[error("Validator set should always be set")]
+    UnsetValidatorSet,
     /// Unset voting power
     #[error("Total voting power should always be set")]
     UnsetVotingPower,

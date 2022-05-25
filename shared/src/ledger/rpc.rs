@@ -28,7 +28,7 @@ use tendermint_rpc_abci::{Client, Order};
 use tendermint_stable::abci::Code;
 
 use crate::ledger::pos::types::{Epoch as PosEpoch, VotingPower};
-use crate::ledger::pos::{self, BondId, Bonds, Slash, Slashes, Unbonds};
+use crate::ledger::pos::{self, BondId, Bonds, Slash, Slashes, Unbonds, ValidatorSets};
 use crate::types::address::Address;
 use crate::types::hash::Hash;
 use crate::types::key::*;
@@ -802,7 +802,7 @@ where
 /// Query the raw bytes of given storage key
 pub async fn query_raw_bytes<C>(
     client: C,
-    storage_key: storage::Key,
+    storage_key: Key,
 ) -> Result<Vec<u8>>
 where
     C: Client + Clone + Sync,
@@ -815,7 +815,7 @@ where
         .map_err(QueryError::ABCIQueryError)?;
 
     match response.code {
-        Code::Ok => Ok(data),
+        Code::Ok => Ok(response.value),
         Code::Err(err) => Err(QueryError::Format(response.info, err))
     }
 }
@@ -830,7 +830,7 @@ where
 {
     let bonds_prefix = pos::bonds_for_source_prefix(address);
     let bonds =
-        query_storage_prefix::<pos::Bonds>(client, bonds_prefix).await?;
+        query_storage_prefix::<C, Bonds>(client, bonds_prefix).await?;
 
     Ok(bonds.is_some() && bonds.unwrap().count() > 0)
 }
@@ -846,7 +846,7 @@ where
 {
     let key = pos::bonds_for_source_prefix(address);
     let bonds_iter =
-        query_storage_prefix::<pos::Bonds>(client, key).await?;
+        query_storage_prefix::<C, Bonds>(client, key).await?;
 
     match bonds_iter {
         Some(mut bonds) => Ok(bonds.any(|(_, bond)| bond.get(epoch).is_some())),
@@ -854,17 +854,78 @@ where
     }
 }
 
+/// Get bonds amount of a specific delegator at a given epoch
+pub async fn get_bond_amount_at<C>(
+    client: C,
+    delegator: &Address,
+    validator: &Address,
+    epoch: Epoch,
+) -> Result<Option<Amount>>
+where
+    C: Client + Clone + Sync
+{
+    let slashes_key = pos::validator_slashes_key(validator);
+    let slashes = query_storage_value::<C, Slashes>(client.clone(), slashes_key)
+        .await?
+        .unwrap_or_default();
+    let bond_key = pos::bond_key(&BondId {
+        source: delegator.clone(),
+        validator: validator.clone(),
+    });
+    let epoched_bonds = query_storage_value::<C, Bonds>(client, bond_key).await?;
+
+    match epoched_bonds {
+        Some(epoched_bonds) => {
+            let mut delegated_amount: Amount = 0.into();
+            for bond in epoched_bonds.iter() {
+                for (epoch_start, &(mut delta)) in bond.deltas.iter().sorted() {
+                    delta = apply_slashes(
+                        &slashes,
+                        delta,
+                        *epoch_start,
+                        None,
+                    );
+                    let epoch_start: Epoch = (*epoch_start).into();
+                    if epoch >= epoch_start {
+                        delegated_amount += delta;
+                    }
+                }
+            }
+            Ok(Some(delegated_amount))
+        }
+        None => Ok(None),
+    }
+}
+
+/// Get a list of all the validators
+pub async fn get_all_validators<C>(
+    client: C,
+    epoch: Epoch,
+) -> Result<Vec<Address>>
+where
+    C: Client + Clone + Sync
+{
+    let validator_set_key = pos::validator_set_key();
+    let validator_sets = query_storage_value::<C, ValidatorSets>(client, validator_set_key)
+            .await?.ok_or(QueryError::UnsetValidatorSet)?;
+
+    let validator_set = validator_sets
+        .get(epoch).ok_or(QueryError::UnsetValidatorSet)?;
+    let all_validators = validator_set.active.union(&validator_set.inactive);
+
+    Ok(all_validators
+        .map(|validator| validator.address.clone())
+        .collect())
+}
+
 // FIXME: missing functions
 // query_proposal
 // get_token_balance
 // query_proposal_result
 // query_protocol_parameters
-// query_result
 // get_proposal_votes
 // get_proposal_offline_votes (dpends on is_delegator_at)
 // compute_tally
-// get_bond_amount_at
-// get_all_validators
 // get_total_staked_tokes
 // get_validator_stake
 // get_delegators_delegation
