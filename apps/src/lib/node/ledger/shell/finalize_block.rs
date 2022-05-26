@@ -14,8 +14,8 @@ use tendermint_proto_abci::crypto::PublicKey as TendermintPublicKey;
 #[cfg(feature = "ABCI")]
 use tendermint_stable::block::Header;
 
-use super::*;
 use super::governance::execute_governance_proposals;
+use super::*;
 
 impl<D, H> Shell<D, H>
 where
@@ -51,7 +51,8 @@ where
         let (height, new_epoch) =
             self.update_state(req.header, req.hash, req.byzantine_validators);
 
-        let _proposals_result = execute_governance_proposals(self, new_epoch, &mut response)?;
+        let _proposals_result =
+            execute_governance_proposals(self, new_epoch, &mut response)?;
 
         for processed_tx in &req.txs {
             let tx = if let Ok(tx) = Tx::try_from(processed_tx.tx.as_ref()) {
