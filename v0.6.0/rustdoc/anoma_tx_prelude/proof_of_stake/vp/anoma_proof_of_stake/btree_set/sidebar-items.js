@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["BTreeSetShims","This trait adds shims for BTreeSet methods that not yet stable. They have the same behavior as their nightly counterparts, but additionally require `Clone` bound on the element type (for `pop_first` and `pop_last`)."]]});

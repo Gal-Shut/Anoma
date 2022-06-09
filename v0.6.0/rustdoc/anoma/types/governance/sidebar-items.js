@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ProposalError",""],["ProposalVote","The vote for a proposal"],["ProposalVoteParseError",""],["TallyResult","The result of a proposal"]],"struct":[["OfflineProposal","The offline proposal structure"],["OfflineVote","The offline proposal structure"],["Proposal","The proposal structure"]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["ADDRESS","Internal address for the Ethereum bridge VP"]],"enum":[["Error",""]],"struct":[["EthBridge","Validity predicate for the Ethereum bridge"]]});
