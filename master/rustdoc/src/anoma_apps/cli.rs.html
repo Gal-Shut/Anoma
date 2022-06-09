@@ -3109,6 +3109,31 @@
 <span id="3108">3108</span>
 <span id="3109">3109</span>
 <span id="3110">3110</span>
+<span id="3111">3111</span>
+<span id="3112">3112</span>
+<span id="3113">3113</span>
+<span id="3114">3114</span>
+<span id="3115">3115</span>
+<span id="3116">3116</span>
+<span id="3117">3117</span>
+<span id="3118">3118</span>
+<span id="3119">3119</span>
+<span id="3120">3120</span>
+<span id="3121">3121</span>
+<span id="3122">3122</span>
+<span id="3123">3123</span>
+<span id="3124">3124</span>
+<span id="3125">3125</span>
+<span id="3126">3126</span>
+<span id="3127">3127</span>
+<span id="3128">3128</span>
+<span id="3129">3129</span>
+<span id="3130">3130</span>
+<span id="3131">3131</span>
+<span id="3132">3132</span>
+<span id="3133">3133</span>
+<span id="3134">3134</span>
+<span id="3135">3135</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The CLI commands that are re-used between the executables `anoma`,</span>
 <span class="doccomment">//! `anoma-node` and `anoma-client`.</span>
 <span class="doccomment">//!</span>
@@ -4503,6 +4528,7 @@
     <span class="kw">const</span> <span class="ident">ALIAS</span>: <span class="ident">Arg</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg</span>(<span class="string">&quot;alias&quot;</span>);
     <span class="kw">const</span> <span class="ident">ALLOW_DUPLICATE_IP</span>: <span class="ident">ArgFlag</span> <span class="op">=</span> <span class="ident">flag</span>(<span class="string">&quot;allow-duplicate-ip&quot;</span>);
     <span class="kw">const</span> <span class="ident">AMOUNT</span>: <span class="ident">Arg</span><span class="op">&lt;</span><span class="ident">token::Amount</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg</span>(<span class="string">&quot;amount&quot;</span>);
+    <span class="kw">const</span> <span class="ident">ARCHIVE_DIR</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_opt</span>(<span class="string">&quot;archive-dir&quot;</span>);
     <span class="kw">const</span> <span class="ident">BASE_DIR</span>: <span class="ident">ArgDefault</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_default</span>(
         <span class="string">&quot;base-dir&quot;</span>,
         <span class="ident">DefaultFn</span>(<span class="op">|</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">env::var</span>(<span class="string">&quot;ANOMA_BASE_DIR&quot;</span>) {
@@ -4534,6 +4560,7 @@
     <span class="kw">const</span> <span class="ident">GAS_LIMIT</span>: <span class="ident">ArgDefault</span><span class="op">&lt;</span><span class="ident">token::Amount</span><span class="op">&gt;</span> <span class="op">=</span>
         <span class="ident">arg_default</span>(<span class="string">&quot;gas-limit&quot;</span>, <span class="ident">DefaultFn</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">token::Amount::from</span>(<span class="number">0</span>)));
     <span class="kw">const</span> <span class="ident">GENESIS_PATH</span>: <span class="ident">Arg</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg</span>(<span class="string">&quot;genesis-path&quot;</span>);
+    <span class="kw">const</span> <span class="ident">GENESIS_VALIDATOR</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg</span>(<span class="string">&quot;genesis-validator&quot;</span>).<span class="ident">opt</span>();
     <span class="kw">const</span> <span class="ident">INTENT_GOSSIPER_ADDR</span>: <span class="ident">ArgDefault</span><span class="op">&lt;</span><span class="ident">SocketAddr</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_default</span>(
         <span class="string">&quot;intent-gossiper&quot;</span>,
         <span class="ident">DefaultFn</span>(<span class="op">|</span><span class="op">|</span> {
@@ -4555,12 +4582,14 @@
     <span class="kw">const</span> <span class="ident">MATCHMAKER_PATH</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_opt</span>(<span class="string">&quot;matchmaker-path&quot;</span>);
     <span class="kw">const</span> <span class="ident">MODE</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_opt</span>(<span class="string">&quot;mode&quot;</span>);
     <span class="kw">const</span> <span class="ident">MULTIADDR_OPT</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">Multiaddr</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_opt</span>(<span class="string">&quot;address&quot;</span>);
+    <span class="kw">const</span> <span class="ident">NET_ADDRESS</span>: <span class="ident">Arg</span><span class="op">&lt;</span><span class="ident">SocketAddr</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg</span>(<span class="string">&quot;net-address&quot;</span>);
     <span class="kw">const</span> <span class="ident">NODE_OPT</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_opt</span>(<span class="string">&quot;node&quot;</span>);
     <span class="kw">const</span> <span class="ident">NODE</span>: <span class="ident">Arg</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg</span>(<span class="string">&quot;node&quot;</span>);
     <span class="kw">const</span> <span class="ident">NFT_ADDRESS</span>: <span class="ident">Arg</span><span class="op">&lt;</span><span class="ident">Address</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg</span>(<span class="string">&quot;nft-address&quot;</span>);
     <span class="kw">const</span> <span class="ident">OWNER</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">WalletAddress</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_opt</span>(<span class="string">&quot;owner&quot;</span>);
     <span class="kw">const</span> <span class="ident">PROPOSAL_OFFLINE</span>: <span class="ident">ArgFlag</span> <span class="op">=</span> <span class="ident">flag</span>(<span class="string">&quot;offline&quot;</span>);
     <span class="kw">const</span> <span class="ident">PROTOCOL_KEY</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">WalletPublicKey</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_opt</span>(<span class="string">&quot;protocol-key&quot;</span>);
+    <span class="kw">const</span> <span class="ident">PRE_GENESIS_PATH</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_opt</span>(<span class="string">&quot;pre-genesis-path&quot;</span>);
     <span class="kw">const</span> <span class="ident">PUBLIC_KEY</span>: <span class="ident">Arg</span><span class="op">&lt;</span><span class="ident">WalletPublicKey</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg</span>(<span class="string">&quot;public-key&quot;</span>);
     <span class="kw">const</span> <span class="ident">PROPOSAL_ID</span>: <span class="ident">Arg</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg</span>(<span class="string">&quot;proposal-id&quot;</span>);
     <span class="kw">const</span> <span class="ident">PROPOSAL_ID_OPT</span>: <span class="ident">ArgOpt</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">arg_opt</span>(<span class="string">&quot;proposal-id&quot;</span>);
@@ -6013,16 +6042,26 @@
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">JoinNetwork</span> {
         <span class="kw">pub</span> <span class="ident">chain_id</span>: <span class="ident">ChainId</span>,
+        <span class="kw">pub</span> <span class="ident">genesis_validator</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+        <span class="kw">pub</span> <span class="ident">pre_genesis_path</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>,
     }
 
     <span class="kw">impl</span> <span class="ident">Args</span> <span class="kw">for</span> <span class="ident">JoinNetwork</span> {
         <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">matches</span>: <span class="kw-2">&amp;</span><span class="ident">ArgMatches</span>) -&gt; <span class="self">Self</span> {
             <span class="kw">let</span> <span class="ident">chain_id</span> <span class="op">=</span> <span class="ident">CHAIN_ID</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
-            <span class="self">Self</span> { <span class="ident">chain_id</span> }
+            <span class="kw">let</span> <span class="ident">genesis_validator</span> <span class="op">=</span> <span class="ident">GENESIS_VALIDATOR</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
+            <span class="kw">let</span> <span class="ident">pre_genesis_path</span> <span class="op">=</span> <span class="ident">PRE_GENESIS_PATH</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
+            <span class="self">Self</span> {
+                <span class="ident">chain_id</span>,
+                <span class="ident">genesis_validator</span>,
+                <span class="ident">pre_genesis_path</span>,
+            }
         }
 
         <span class="kw">fn</span> <span class="ident">def</span>(<span class="ident">app</span>: <span class="ident">App</span>) -&gt; <span class="ident">App</span> {
             <span class="ident">app</span>.<span class="ident">arg</span>(<span class="ident">CHAIN_ID</span>.<span class="ident">def</span>().<span class="ident">about</span>(<span class="string">&quot;The chain ID. The chain must be known in the https://github.com/heliaxdev/anoma-network-config repository.&quot;</span>))
+                .<span class="ident">arg</span>(<span class="ident">GENESIS_VALIDATOR</span>.<span class="ident">def</span>().<span class="ident">about</span>(<span class="string">&quot;The alias of the genesis validator that you want to set up as, if any.&quot;</span>))
+                .<span class="ident">arg</span>(<span class="ident">PRE_GENESIS_PATH</span>.<span class="ident">def</span>().<span class="ident">about</span>(<span class="string">&quot;The path to the pre-genesis directory for genesis validator, if any. Defaults to \&quot;{base-dir}/pre-genesis/{genesis-validator}\&quot;.&quot;</span>))
         }
     }
 
@@ -6036,6 +6075,7 @@
         <span class="kw">pub</span> <span class="ident">localhost</span>: <span class="ident">bool</span>,
         <span class="kw">pub</span> <span class="ident">allow_duplicate_ip</span>: <span class="ident">bool</span>,
         <span class="kw">pub</span> <span class="ident">dont_archive</span>: <span class="ident">bool</span>,
+        <span class="kw">pub</span> <span class="ident">archive_dir</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>,
     }
 
     <span class="kw">impl</span> <span class="ident">Args</span> <span class="kw">for</span> <span class="ident">InitNetwork</span> {
@@ -6049,6 +6089,7 @@
             <span class="kw">let</span> <span class="ident">localhost</span> <span class="op">=</span> <span class="ident">LOCALHOST</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
             <span class="kw">let</span> <span class="ident">allow_duplicate_ip</span> <span class="op">=</span> <span class="ident">ALLOW_DUPLICATE_IP</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
             <span class="kw">let</span> <span class="ident">dont_archive</span> <span class="op">=</span> <span class="ident">DONT_ARCHIVE</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
+            <span class="kw">let</span> <span class="ident">archive_dir</span> <span class="op">=</span> <span class="ident">ARCHIVE_DIR</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
             <span class="self">Self</span> {
                 <span class="ident">genesis_path</span>,
                 <span class="ident">wasm_checksums_path</span>,
@@ -6058,6 +6099,7 @@
                 <span class="ident">localhost</span>,
                 <span class="ident">allow_duplicate_ip</span>,
                 <span class="ident">dont_archive</span>,
+                <span class="ident">archive_dir</span>,
             }
         }
 
@@ -6097,31 +6139,39 @@
                     .<span class="ident">def</span>()
                     .<span class="ident">about</span>(<span class="string">&quot;Do NOT create the release archive.&quot;</span>),
             )
+            .<span class="ident">arg</span>(<span class="ident">ARCHIVE_DIR</span>.<span class="ident">def</span>().<span class="ident">about</span>(
+                <span class="string">&quot;Specify a directory into which to store the archive. Default \
+                 is the current working directory.&quot;</span>,
+            ))
         }
     }
 
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InitGenesisValidator</span> {
         <span class="kw">pub</span> <span class="ident">alias</span>: <span class="ident">String</span>,
-        <span class="kw">pub</span> <span class="ident">chain_id</span>: <span class="ident">ChainId</span>,
+        <span class="kw">pub</span> <span class="ident">net_address</span>: <span class="ident">SocketAddr</span>,
         <span class="kw">pub</span> <span class="ident">unsafe_dont_encrypt</span>: <span class="ident">bool</span>,
     }
 
     <span class="kw">impl</span> <span class="ident">Args</span> <span class="kw">for</span> <span class="ident">InitGenesisValidator</span> {
         <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">matches</span>: <span class="kw-2">&amp;</span><span class="ident">ArgMatches</span>) -&gt; <span class="self">Self</span> {
             <span class="kw">let</span> <span class="ident">alias</span> <span class="op">=</span> <span class="ident">ALIAS</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
-            <span class="kw">let</span> <span class="ident">chain_id</span> <span class="op">=</span> <span class="ident">CHAIN_ID</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
+            <span class="kw">let</span> <span class="ident">net_address</span> <span class="op">=</span> <span class="ident">NET_ADDRESS</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
             <span class="kw">let</span> <span class="ident">unsafe_dont_encrypt</span> <span class="op">=</span> <span class="ident">UNSAFE_DONT_ENCRYPT</span>.<span class="ident">parse</span>(<span class="ident">matches</span>);
             <span class="self">Self</span> {
                 <span class="ident">alias</span>,
-                <span class="ident">chain_id</span>,
+                <span class="ident">net_address</span>,
                 <span class="ident">unsafe_dont_encrypt</span>,
             }
         }
 
         <span class="kw">fn</span> <span class="ident">def</span>(<span class="ident">app</span>: <span class="ident">App</span>) -&gt; <span class="ident">App</span> {
             <span class="ident">app</span>.<span class="ident">arg</span>(<span class="ident">ALIAS</span>.<span class="ident">def</span>().<span class="ident">about</span>(<span class="string">&quot;The validator address alias.&quot;</span>))
-                .<span class="ident">arg</span>(<span class="ident">CHAIN_ID</span>.<span class="ident">def</span>().<span class="ident">about</span>(<span class="string">&quot;The chain ID.&quot;</span>))
+                .<span class="ident">arg</span>(<span class="ident">NET_ADDRESS</span>.<span class="ident">def</span>().<span class="ident">about</span>(
+                    <span class="string">&quot;Static {host:port} of your validator node&#39;s P2P address. \
+                     Anoma uses port `26656` for P2P connections by default, \
+                     but you can configure a different value.&quot;</span>,
+                ))
                 .<span class="ident">arg</span>(<span class="ident">UNSAFE_DONT_ENCRYPT</span>.<span class="ident">def</span>().<span class="ident">about</span>(
                     <span class="string">&quot;UNSAFE: Do not encrypt the generated keypairs. Do not \
                      use this for keys used in a live network.&quot;</span>,

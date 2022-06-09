@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["PosParams","Proof-of-Stake system parameters"]]});
+initSidebarItems({"enum":[["ValidationError",""]],"mod":[["testing","Testing helpers"]],"struct":[["PosParams","Proof-of-Stake system parameters"]]});

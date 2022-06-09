@@ -2916,7 +2916,7 @@
     <span class="kw">let</span> <span class="ident">gas_meter</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">env</span>.<span class="ident">ctx</span>.<span class="ident">gas_meter</span>.<span class="ident">get</span>() };
     <span class="ident">vp_env::add_gas</span>(<span class="ident">gas_meter</span>, <span class="ident">gas</span>)<span class="question-mark">?</span>;
 
-    <span class="macro">tracing::debug!</span>(<span class="string">&quot;vp_read_temp {}, key {}&quot;</span>, <span class="ident">key</span>, <span class="ident">key_ptr</span>,);
+    <span class="macro">tracing::debug!</span>(<span class="string">&quot;vp_read_temp {}, key {}&quot;</span>, <span class="ident">key</span>, <span class="ident">key_ptr</span>);
 
     <span class="comment">// try to read from the write log</span>
     <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span>

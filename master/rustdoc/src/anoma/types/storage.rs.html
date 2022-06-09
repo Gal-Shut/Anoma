@@ -936,18 +936,6 @@
 <span id="935">935</span>
 <span id="936">936</span>
 <span id="937">937</span>
-<span id="938">938</span>
-<span id="939">939</span>
-<span id="940">940</span>
-<span id="941">941</span>
-<span id="942">942</span>
-<span id="943">943</span>
-<span id="944">944</span>
-<span id="945">945</span>
-<span id="946">946</span>
-<span id="947">947</span>
-<span id="948">948</span>
-<span id="949">949</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Storage types</span>
 <span class="kw">use</span> <span class="ident">std::convert</span>::{<span class="ident">TryFrom</span>, <span class="ident">TryInto</span>};
 <span class="kw">use</span> <span class="ident">std::fmt::Display</span>;
@@ -962,8 +950,7 @@
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ferveo-tpke&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::transaction::WrapperTx</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::bytes::ByteBuf</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::address</span>::{<span class="self">self</span>, <span class="ident">Address</span>, <span class="ident">InternalAddress</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::token::BALANCE_STORAGE_KEY</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::address</span>::{<span class="self">self</span>, <span class="ident">Address</span>};
 
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">missing_docs</span>)]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
@@ -1215,17 +1202,6 @@
             }
             <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
         }
-    }
-
-    <span class="doccomment">/// Check if the given key can be updated</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_updatable</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="op">!</span><span class="macro">matches!</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">segments</span>[..], [
-            <span class="ident">DbKeySeg::AddressSeg</span>(<span class="kw">_</span>),
-            <span class="ident">DbKeySeg::StringSeg</span>(<span class="ident">key</span>),
-            <span class="ident">DbKeySeg::AddressSeg</span>(<span class="ident">Address::Internal</span>(
-                <span class="ident">InternalAddress::IbcBurn</span> <span class="op">|</span> <span class="ident">InternalAddress::IbcMint</span>)),
-        ] <span class="kw">if</span> <span class="ident">key</span> <span class="op">==</span> <span class="ident">BALANCE_STORAGE_KEY</span>
-        )
     }
 
     <span class="doccomment">/// Returns a key from the given DB key path that has the height and</span>

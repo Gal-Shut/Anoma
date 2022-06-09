@@ -32,7 +32,7 @@
 
         <!-- Custom theme stylesheets -->
         <link rel="stylesheet" href="assets/custom.css">
-        <link rel="stylesheet" href="mdbook-admonish.css">
+        <link rel="stylesheet" href="assets/mdbook-admonish.css">
 
         <!-- MathJax -->
         <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
@@ -2226,7 +2226,7 @@ publicus.org-checkbox
 <p>Add these to your settings.json to get rustfmt and clippy with the nightly version that we use:</p>
 <pre><code class="language-json">&quot;rust-analyzer.checkOnSave.overrideCommand&quot;: [
     &quot;cargo&quot;,
-    &quot;+nightly-2021-11-01&quot;,
+    &quot;+nightly-2022-01-27&quot;,
     &quot;clippy&quot;,
     &quot;--workspace&quot;,
     &quot;--message-format=json&quot;,
@@ -2235,7 +2235,7 @@ publicus.org-checkbox
 &quot;rust-analyzer.rustfmt.overrideCommand&quot;: [
     &quot;rustup&quot;,
     &quot;run&quot;,
-    &quot;nightly-2021-11-01&quot;,
+    &quot;nightly-2022-01-27&quot;,
     &quot;--&quot;,
     &quot;rustfmt&quot;,
     &quot;--edition&quot;,
@@ -2916,7 +2916,10 @@ state may be comprised of keys with a format specified above and values of arbit
 <tr><td>6</td><td>IbcMint</td><td><a href="specs/encoding.html#internaladdressibcmint">InternalAddressIbcMint</a></td></tr>
 <tr><td>7</td><td>Governance</td><td><a href="specs/encoding.html#internaladdressgovernance">InternalAddressGovernance</a></td></tr>
 <tr><td>8</td><td>Treasury</td><td><a href="specs/encoding.html#internaladdresstreasury">InternalAddressTreasury</a></td></tr>
+<tr><td>9</td><td>EthBridge</td><td><a href="specs/encoding.html#internaladdressethbridge">InternalAddressEthBridge</a></td></tr>
 </tbody></table>
+<h4 id="internaladdressethbridge"><a class="header" href="#internaladdressethbridge">InternalAddressEthBridge</a></h4>
+<p>Empty struct (unit)</p>
 <h4 id="internaladdressgovernance"><a class="header" href="#internaladdressgovernance">InternalAddressGovernance</a></h4>
 <p>Empty struct (unit)</p>
 <h4 id="internaladdressibc"><a class="header" href="#internaladdressibc">InternalAddressIbc</a></h4>

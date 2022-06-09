@@ -17,6 +17,9 @@
 <span id="16">16</span>
 <span id="17">17</span>
 <span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Anoma integrations and WASM tests and testing helpers.</span>
 
 <span class="attribute">#![<span class="ident">doc</span>(<span class="ident">html_favicon_url</span> <span class="op">=</span> <span class="string">&quot;https://dev.anoma.net/master/favicon.png&quot;</span>)]</span>
@@ -28,6 +31,9 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">vm_host_env</span>::{<span class="ident">ibc</span>, <span class="ident">tx</span>, <span class="ident">vp</span>};
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">e2e</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">mod</span> <span class="ident">native_vp</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">storage</span>;
 
 <span class="doccomment">/// Using this import requires `tracing` and `tracing-subscriber` dependencies.</span>
 <span class="doccomment">/// Set env var `RUST_LOG=info` to see the logs from a test run (and</span>

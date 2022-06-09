@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ValueChange","Storage value modification"]],"struct":[["Change","Storage modification"]],"type":[["Changes","A list of changes, which must be applied in the same order to get to the current state."]]});

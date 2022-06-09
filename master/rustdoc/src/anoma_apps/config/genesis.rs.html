@@ -878,6 +878,24 @@
 <span id="877">877</span>
 <span id="878">878</span>
 <span id="879">879</span>
+<span id="880">880</span>
+<span id="881">881</span>
+<span id="882">882</span>
+<span id="883">883</span>
+<span id="884">884</span>
+<span id="885">885</span>
+<span id="886">886</span>
+<span id="887">887</span>
+<span id="888">888</span>
+<span id="889">889</span>
+<span id="890">890</span>
+<span id="891">891</span>
+<span id="892">892</span>
+<span id="893">893</span>
+<span id="894">894</span>
+<span id="895">895</span>
+<span id="896">896</span>
+<span id="897">897</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The parameters used for the chain&#39;s genesis</span>
 
 <span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
@@ -918,6 +936,7 @@
     <span class="kw">use</span> <span class="ident">anoma::types</span>::{<span class="ident">storage</span>, <span class="ident">token</span>};
     <span class="kw">use</span> <span class="ident">hex</span>;
     <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
+    <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 
     <span class="kw">use</span> <span class="kw">super</span>::{
         <span class="ident">EstablishedAccount</span>, <span class="ident">Genesis</span>, <span class="ident">ImplicitAccount</span>, <span class="ident">TokenAccount</span>, <span class="ident">Validator</span>,
@@ -952,10 +971,13 @@
         }
     }
 
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
+    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
     <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HexKeyError</span> {
+        <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid hex string: {0:?}&quot;</span>)]</span>
         <span class="ident">InvalidHexString</span>(<span class="ident">hex::FromHexError</span>),
+        <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid sha256 checksum: {0}&quot;</span>)]</span>
         <span class="ident">InvalidSha256</span>(<span class="ident">TryFromSliceError</span>),
+        <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid public key: {0}&quot;</span>)]</span>
         <span class="ident">InvalidPublicKey</span>(<span class="ident">ParsePublicKeyError</span>),
     }
 
@@ -1027,7 +1049,16 @@
         <span class="kw">pub</span> <span class="ident">max_proposal_fund_transfer</span>: <span class="ident">u64</span>,
     }
 
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
+    <span class="doccomment">/// Validator pre-genesis configuration can be created with client utils</span>
+    <span class="doccomment">/// `init-genesis-validator` command and added to a genesis for</span>
+    <span class="doccomment">/// `init-network` cmd and that can be subsequently read by `join-network`</span>
+    <span class="doccomment">/// cmd to setup a genesis validator node.</span>
+    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Debug</span>)]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ValidatorPreGenesisConfig</span> {
+        <span class="kw">pub</span> <span class="ident">validator</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">ValidatorConfig</span><span class="op">&gt;</span>,
+    }
+
+    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Default</span>, <span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ValidatorConfig</span> {
         <span class="comment">// Public key for consensus. (default: generate)</span>
         <span class="kw">pub</span> <span class="ident">consensus_public_key</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">HexString</span><span class="op">&gt;</span>,
@@ -1046,10 +1077,10 @@
         <span class="kw">pub</span> <span class="ident">staking_reward_address</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
         <span class="comment">// Total number of tokens held at genesis.</span>
         <span class="comment">// XXX: u64 doesn&#39;t work with toml-rs!</span>
-        <span class="kw">pub</span> <span class="ident">tokens</span>: <span class="ident">u64</span>,
+        <span class="kw">pub</span> <span class="ident">tokens</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
         <span class="comment">// Unstaked balance at genesis.</span>
         <span class="comment">// XXX: u64 doesn&#39;t work with toml-rs!</span>
-        <span class="kw">pub</span> <span class="ident">non_staked_balance</span>: <span class="ident">u64</span>,
+        <span class="kw">pub</span> <span class="ident">non_staked_balance</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
         <span class="comment">// Filename of validator VP. (default: default validator VP)</span>
         <span class="kw">pub</span> <span class="ident">validator_vp</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
         <span class="comment">// Filename of staking reward account VP. (default: user VP)</span>
@@ -1066,6 +1097,9 @@
         <span class="doccomment">/// not part of the gossipsub where intents are being propagated and</span>
         <span class="doccomment">/// hence cannot run matchmakers</span>
         <span class="kw">pub</span> <span class="ident">intent_gossip_seed</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>,
+        <span class="doccomment">/// Tendermint node key is used to derive Tendermint node ID for node</span>
+        <span class="doccomment">/// authentication</span>
+        <span class="kw">pub</span> <span class="ident">tendermint_node_key</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">HexString</span><span class="op">&gt;</span>,
     }
 
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
@@ -1169,7 +1203,7 @@
                     <span class="kw-2">&amp;</span><span class="ident">config</span>.<span class="ident">staking_reward_address</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
                 )
                 .<span class="ident">unwrap</span>(),
-                <span class="ident">tokens</span>: <span class="ident">token::Amount::whole</span>(<span class="ident">config</span>.<span class="ident">tokens</span>),
+                <span class="ident">tokens</span>: <span class="ident">token::Amount::whole</span>(<span class="ident">config</span>.<span class="ident">tokens</span>.<span class="ident">unwrap_or_default</span>()),
                 <span class="ident">consensus_key</span>: <span class="ident">config</span>
                     .<span class="ident">consensus_public_key</span>
                     .<span class="ident">as_ref</span>()
@@ -1201,7 +1235,9 @@
                 .<span class="ident">unwrap</span>()
                 .<span class="ident">to_dkg_public_key</span>()
                 .<span class="ident">unwrap</span>(),
-            <span class="ident">non_staked_balance</span>: <span class="ident">token::Amount::whole</span>(<span class="ident">config</span>.<span class="ident">non_staked_balance</span>),
+            <span class="ident">non_staked_balance</span>: <span class="ident">token::Amount::whole</span>(
+                <span class="ident">config</span>.<span class="ident">non_staked_balance</span>.<span class="ident">unwrap_or_default</span>(),
+            ),
             <span class="ident">validator_vp_code_path</span>: <span class="ident">validator_vp_config</span>.<span class="ident">filename</span>.<span class="ident">to_owned</span>(),
             <span class="ident">validator_vp_sha256</span>: <span class="ident">validator_vp_config</span>
                 .<span class="ident">sha256</span>
