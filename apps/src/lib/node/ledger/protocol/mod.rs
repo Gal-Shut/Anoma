@@ -319,7 +319,8 @@ where
                             gas_meter = governance.ctx.gas_meter.into_inner();
                             result
                         }
-                        InternalAddress::IbcEscrow(_)
+                        InternalAddress::IbcToken(_)
+                        | InternalAddress::IbcEscrow
                         | InternalAddress::IbcBurn
                         | InternalAddress::IbcMint => {
                             // validate the transfer
