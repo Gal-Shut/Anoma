@@ -8,6 +8,9 @@ readme = "../README.md"
 resolver = "2"
 version = "0.5.0"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 borsh = "0.9.1"
 thiserror = "1.0.30"
