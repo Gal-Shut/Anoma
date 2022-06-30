@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["gossip",""],["rpc","Client RPC queries"],["signing","Helpers for making digital signatures using cryptographic keys from the wallet."],["tx",""],["utils",""]]});
+initSidebarItems({"mod":[["gossip",""],["rpc","Client RPC queries"],["signing","Helpers for making digital signatures using cryptographic keys from the wallet."],["tendermint_rpc_types",""],["tx",""],["utils",""]]});

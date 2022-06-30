@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Error","Errors from interacting with Tendermint’s jsonrpc endpoint"],["TxBroadcastData","Data needed for broadcasting a tx and monitoring its progress on chain"]],"struct":[["TxResponse","A parsed event from tendermint relating to a transaction"]]});
