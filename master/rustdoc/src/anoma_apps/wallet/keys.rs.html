@@ -482,7 +482,7 @@
 <span class="doccomment">/// Make encryption secret key from a password.</span>
 <span class="kw">fn</span> <span class="ident">encryption_key</span>(<span class="ident">salt</span>: <span class="kw-2">&amp;</span><span class="ident">kdf::Salt</span>, <span class="ident">password</span>: <span class="ident">String</span>) -&gt; <span class="ident">kdf::SecretKey</span> {
     <span class="ident">kdf::Password::from_slice</span>(<span class="ident">password</span>.<span class="ident">as_bytes</span>())
-        .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">password</span><span class="op">|</span> <span class="ident">kdf::derive_key</span>(<span class="kw-2">&amp;</span><span class="ident">password</span>, <span class="ident">salt</span>, <span class="number">3</span>, <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">16</span>, <span class="number">32</span>))
+        .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">password</span><span class="op">|</span> <span class="ident">kdf::derive_key</span>(<span class="kw-2">&amp;</span><span class="ident">password</span>, <span class="ident">salt</span>, <span class="number">3</span>, <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">17</span>, <span class="number">32</span>))
         .<span class="ident">expect</span>(<span class="string">&quot;Generation of encryption secret key shouldn&#39;t fail&quot;</span>)
 }
 </code></pre></div>
