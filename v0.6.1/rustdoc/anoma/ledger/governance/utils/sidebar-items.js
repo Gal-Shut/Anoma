@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Error","Proposal errors"]],"fn":[["compute_tally","Return a proposal result and his associated proposal code (if any)"],["get_proposal_votes","Prepare Votes structure to compute proposal tally"]],"struct":[["ProposalEvent","Proposal event definition"],["Votes","Proposal structure holding votes information necessary to compute the outcome"]]});

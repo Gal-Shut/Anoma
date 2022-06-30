@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["ADDRESS","Internal treasury address"]],"enum":[["Error",""]],"mod":[["parameters","treasury parameters"],["storage","treasury storage"]],"struct":[["TreasuryVp","Treasury VP"]],"type":[["Result","Treasury functions result"]]});
