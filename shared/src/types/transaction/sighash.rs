@@ -6,7 +6,7 @@ use masp_primitives::asset_type::AssetType;
 use super::legacy::Script;
 use masp_primitives::transaction::{
     components::{TxIn as Ti, TxOut as To},
-    Transaction, TransactionData, OVERWINTER_VERSION_GROUP_ID, SAPLING_TX_VERSION,
+    TransactionData, OVERWINTER_VERSION_GROUP_ID, SAPLING_TX_VERSION,
     SAPLING_VERSION_GROUP_ID,
 };
 use super::components::{TxIn, TxOut};
@@ -238,13 +238,4 @@ pub fn signature_hash_data(
         }
         SigHashVersion::Sprout => unimplemented!(),
     }
-}
-
-pub fn signature_hash(
-    tx: &Transaction<TxIn, TxOut>,
-    consensus_branch_id: consensus::BranchId,
-    hash_type: u32,
-    transparent_input: Option<(usize, &Script, AssetType, u64)>,
-) -> Vec<u8> {
-    signature_hash_data(tx, consensus_branch_id, hash_type, transparent_input)
 }
