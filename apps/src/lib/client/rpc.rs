@@ -1662,41 +1662,56 @@ pub async fn get_proposal_offline_votes(
             let bonds_iter =
                 query_storage_prefix::<pos::Bonds>(client.clone(), key).await;
             if let Some(bonds) = bonds_iter {
-                for (key, epoched_amount) in bonds {
-                    let bond = epoched_amount
-                        .get(proposal.tally_epoch)
-                        .expect("Delegation bond should be definied.");
+                for (key, epoched_bonds) in bonds {
+                    // Look-up slashes for the validator in this key and
+                    // apply them if any
+                    let validator = pos::get_validator_address_from_bond(&key)
+                        .expect(
+                            "Delegation key should contain validator address.",
+                        );
+                    let slashes_key = pos::validator_slashes_key(&validator);
+                    let slashes = query_storage_value::<pos::Slashes>(
+                        client,
+                        &slashes_key,
+                    )
+                    .await
+                    .unwrap_or_default();
+                    let mut delegated_amount: token::Amount = 0.into();
                     let epoch = anoma::ledger::pos::types::Epoch::from(
                         proposal.tally_epoch.0,
                     );
-                    let amount = *bond
-                        .deltas
-                        .get(&epoch)
-                        .expect("Delegation amount should be definied.");
-                    let validator_address =
-                        pos::get_validator_address_from_bond(&key).expect(
-                            "Delegation key should contain validator address.",
+                    let bond = epoched_bonds
+                        .get(epoch)
+                        .expect("Delegation bond should be definied.");
+                    for (start_epoch, &(mut delta)) in
+                        bond.deltas.iter().sorted()
+                    {
+                        delta = apply_slashes(
+                            &slashes,
+                            delta,
+                            *start_epoch,
+                            None,
+                            None,
                         );
+                        delegated_amount += delta;
+                    }
+
                     if proposal_vote.vote.is_yay() {
-                        match yay_delegators.get_mut(&proposal_vote.address) {
-                            Some(map) => {
-                                map.insert(validator_address, VotePower::from(amount));
-                            },
-                            None => {
-                                let delegations_map: HashMap<Address, VotePower> = HashMap::from([(validator_address, VotePower::from(amount))]);
-                                yay_delegators.insert(proposal_vote.address.clone(), delegations_map);
-                            }
-                        }
+                        let mut entry = yay_delegators
+                            .entry(&proposal_vote.address)
+                            .or_default();
+                        entry.insert(
+                            validator,
+                            VotePower::from(delegated_amount),
+                        );
                     } else {
-                        match nay_delegators.get_mut(&proposal_vote.address) {
-                            Some(map) => {
-                                map.insert(validator_address, VotePower::from(amount));
-                            },
-                            None => {
-                                let delegations_map: HashMap<Address, VotePower> = HashMap::from([(validator_address, VotePower::from(amount))]);
-                                nay_delegators.insert(proposal_vote.address.clone(), delegations_map);
-                            }
-                        }
+                        let mut entry = nay_delegators
+                            .entry(&proposal_vote.address)
+                            .or_default();
+                        entry.insert(
+                            validator,
+                            VotePower::from(delegated_amount),
+                        );
                     }
                 }
             }
