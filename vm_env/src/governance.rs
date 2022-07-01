@@ -60,6 +60,7 @@ pub mod tx {
             &data.author,
             &governance_address,
             &m1t(),
+            None,
             min_proposal_funds,
         );
     }
