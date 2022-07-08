@@ -48,9 +48,12 @@ fn handle_command(cmd: cli::cmds::Anoma, raw_sub_cmd: String) -> Result<()> {
         cli::cmds::Anoma::Client(_)
         | cli::cmds::Anoma::TxCustom(_)
         | cli::cmds::Anoma::TxTransfer(_)
+        | cli::cmds::Anoma::TxIbcTransfer(_)
         | cli::cmds::Anoma::TxUpdateVp(_)
         | cli::cmds::Anoma::TxInitNft(_)
         | cli::cmds::Anoma::TxMintNft(_)
+        | cli::cmds::Anoma::TxInitProposal(_)
+        | cli::cmds::Anoma::TxVoteProposal(_)
         | cli::cmds::Anoma::Intent(_) => handle_subcommand("anomac", sub_args),
         cli::cmds::Anoma::Wallet(_) => handle_subcommand("anomaw", sub_args),
     }

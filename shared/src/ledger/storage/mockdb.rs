@@ -11,6 +11,8 @@ use super::{
     BlockStateRead, BlockStateWrite, DBIter, DBWriteBatch, Error, Result, DB,
 };
 use crate::ledger::storage::types::{self, KVBytes, PrefixIterator};
+use crate::tendermint::block::Header;
+use crate::tendermint_proto::Protobuf;
 #[cfg(feature = "ferveo-tpke")]
 use crate::types::storage::TxQueue;
 use crate::types::storage::{BlockHeight, Key, KeySeg, KEY_SEGMENT_SEPARATOR};
@@ -111,6 +113,9 @@ impl DB for MockDB {
                         }
                         None => unknown_key_error(path)?,
                     },
+                    "header" => {
+                        // the block header doesn't have to be restored
+                    }
                     "hash" => {
                         hash = Some(
                             types::decode(bytes).map_err(Error::CodingError)?,
@@ -161,6 +166,7 @@ impl DB for MockDB {
     fn write_block(&mut self, state: BlockStateWrite) -> Result<()> {
         let BlockStateWrite {
             merkle_tree_stores,
+            header,
             hash,
             height,
             epoch,
@@ -214,6 +220,18 @@ impl DB for MockDB {
                 );
             }
         }
+        // Block header
+        {
+            if let Some(h) = header {
+                let key = prefix_key
+                    .push(&"header".to_owned())
+                    .map_err(Error::KeyError)?;
+                self.0.borrow_mut().insert(
+                    key.to_string(),
+                    h.encode_vec().expect("serialization failed"),
+                );
+            }
+        }
         // Block hash
         {
             let key = prefix_key
@@ -257,9 +275,71 @@ impl DB for MockDB {
         Ok(())
     }
 
+    fn read_block_header(&self, height: BlockHeight) -> Result<Option<Header>> {
+        let prefix_key = Key::from(height.to_db_key());
+        let key = prefix_key
+            .push(&"header".to_owned())
+            .map_err(Error::KeyError)?;
+        let value = self.0.borrow().get(&key.to_string()).cloned();
+        match value {
+            Some(v) => Ok(Some(
+                Header::decode_vec(&v).map_err(Error::ProtobufCodingError)?,
+            )),
+            None => Ok(None),
+        }
+    }
+
+    fn read_merkle_tree_stores(
+        &self,
+        height: BlockHeight,
+    ) -> Result<Option<MerkleTreeStoresRead>> {
+        let mut merkle_tree_stores = MerkleTreeStoresRead::default();
+        let height_key = Key::from(height.to_db_key());
+        let tree_key = height_key
+            .push(&"tree".to_owned())
+            .map_err(Error::KeyError)?;
+        for st in StoreType::iter() {
+            let prefix_key =
+                tree_key.push(&st.to_string()).map_err(Error::KeyError)?;
+            let root_key = prefix_key
+                .push(&"root".to_owned())
+                .map_err(Error::KeyError)?;
+            let bytes = self.0.borrow().get(&root_key.to_string()).cloned();
+            match bytes {
+                Some(b) => {
+                    let root = types::decode(b).map_err(Error::CodingError)?;
+                    merkle_tree_stores.set_root(st, root);
+                }
+                None => return Ok(None),
+            }
+
+            let store_key = prefix_key
+                .push(&"store".to_owned())
+                .map_err(Error::KeyError)?;
+            let bytes = self.0.borrow().get(&store_key.to_string()).cloned();
+            match bytes {
+                Some(b) => {
+                    let store = types::decode(b).map_err(Error::CodingError)?;
+                    merkle_tree_stores.set_store(st, store);
+                }
+                None => return Ok(None),
+            }
+        }
+        Ok(Some(merkle_tree_stores))
+    }
+
     fn read_subspace_val(&self, key: &Key) -> Result<Option<Vec<u8>>> {
         let key = Key::parse("subspace").map_err(Error::KeyError)?.join(key);
         Ok(self.0.borrow().get(&key.to_string()).cloned())
+    }
+
+    fn read_subspace_val_with_height(
+        &self,
+        _key: &Key,
+        _height: BlockHeight,
+    ) -> Result<Option<Vec<u8>>> {
+        // Mock DB can read only the latest value for now
+        unimplemented!()
     }
 
     fn write_subspace_val(

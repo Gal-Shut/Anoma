@@ -18,6 +18,9 @@ pub async fn main() -> Result<()> {
                 Sub::TxTransfer(TxTransfer(args)) => {
                     tx::submit_transfer(ctx, args).await;
                 }
+                Sub::TxIbcTransfer(TxIbcTransfer(args)) => {
+                    tx::submit_ibc_transfer(ctx, args).await;
+                }
                 Sub::TxUpdateVp(TxUpdateVp(args)) => {
                     tx::submit_update_vp(ctx, args).await;
                 }
@@ -32,6 +35,12 @@ pub async fn main() -> Result<()> {
                 }
                 Sub::TxMintNft(TxMintNft(args)) => {
                     tx::submit_mint_nft(ctx, args).await;
+                }
+                Sub::TxInitProposal(TxInitProposal(args)) => {
+                    tx::submit_init_proposal(ctx, args).await;
+                }
+                Sub::TxVoteProposal(TxVoteProposal(args)) => {
+                    tx::submit_vote_proposal(ctx, args).await;
                 }
                 Sub::Bond(Bond(args)) => {
                     tx::submit_bond(ctx, args).await;
@@ -60,6 +69,13 @@ pub async fn main() -> Result<()> {
                 }
                 Sub::QueryResult(QueryResult(args)) => {
                     rpc::query_result(ctx, args).await;
+                }
+                Sub::QueryRawBytes(QueryRawBytes(args)) => {
+                    rpc::query_raw_bytes(ctx, args).await;
+                }
+
+                Sub::QueryProposal(QueryProposal(args)) => {
+                    rpc::query_proposal(ctx, args).await;
                 }
                 // Gossip cmds
                 Sub::Intent(Intent(args)) => {

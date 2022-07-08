@@ -12,8 +12,7 @@ use thiserror::Error;
 #[cfg(feature = "ferveo-tpke")]
 use super::transaction::WrapperTx;
 use crate::bytes::ByteBuf;
-use crate::types::address::{self, Address, InternalAddress};
-use crate::types::token::BALANCE_STORAGE_KEY;
+use crate::types::address::{self, Address};
 
 #[allow(missing_docs)]
 #[derive(Error, Debug)]
@@ -186,6 +185,14 @@ impl From<DbKeySeg> for Key {
     }
 }
 
+impl FromStr for Key {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Key::parse(s)
+    }
+}
+
 impl Key {
     /// Parses string and returns a key
     pub fn parse(string: impl AsRef<str>) -> Result<Self> {
@@ -221,6 +228,11 @@ impl Key {
             }
         }
         addresses
+    }
+
+    /// Return the segment at the index parameter
+    pub fn get_at(&self, index: usize) -> Option<&DbKeySeg> {
+        self.segments.get(index)
     }
 
     /// Returns the length

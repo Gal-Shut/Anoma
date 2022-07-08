@@ -672,6 +672,9 @@ pub mod constants {
     pub const BB_PAYMENT_ADDRESS: &str = "544c1c52f8873c60ad0cbd486a0dad6ab9d756d47976228d21113f5c5b061f2a8c7b16e3202f2eed73f370";
     pub const AA_VIEWING_KEY: &str = "628a9956322f3f7d20b19801d9b4a8f3cb4b8b756a26ef2477feb5264be7b808c920996f37a79433d08e27fefcda0b6736c296b1073734a4ee35d11368f2b52ef14d7c1749cc8119ecc8a894f696992453f2dd78ef1e9d74172b2a5ef7cc8c50";
 
+    //  Native VP aliases
+    pub const GOVERNANCE_ADDRESS: &str = "governance";
+
     // Fungible token addresses
     pub const XAN: &str = "XAN";
     pub const BTC: &str = "BTC";
@@ -687,6 +690,7 @@ pub mod constants {
     pub const TX_TRANSFER_WASM: &str = "wasm/tx_transfer.wasm";
     pub const VP_USER_WASM: &str = "wasm/vp_user.wasm";
     pub const TX_NO_OP_WASM: &str = "wasm_for_tests/tx_no_op.wasm";
+    pub const TX_INIT_PROPOSAL: &str = "wasm_for_tests/tx_init_proposal.wasm";
     pub const VP_ALWAYS_TRUE_WASM: &str = "wasm_for_tests/vp_always_true.wasm";
     pub const VP_ALWAYS_FALSE_WASM: &str =
         "wasm_for_tests/vp_always_false.wasm";
