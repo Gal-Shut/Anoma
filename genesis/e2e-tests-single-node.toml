@@ -122,6 +122,10 @@ vp = "vp_user"
 [established.Christel]
 vp = "vp_user"
 
+[established.masp]
+address = "atest1v4ehgw36xaryysfsx5unvve4g5my2vjz89p52sjxxgenzd348yuyyv3hg3pnjs35g5unvde4ca36y5"
+vp = "vp_masp"
+
 [implicit.Daewon]
 
 # Wasm VP definitions
