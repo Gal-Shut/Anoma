@@ -47,6 +47,7 @@ pub mod cmds {
         // Inlined commands from the client.
         TxCustom(TxCustom),
         TxTransfer(TxTransfer),
+        TxIbcTransfer(TxIbcTransfer),
         TxUpdateVp(TxUpdateVp),
         TxInitNft(TxInitNft),
         TxMintNft(TxMintNft),
@@ -65,6 +66,7 @@ pub mod cmds {
                 .subcommand(Matchmaker::def())
                 .subcommand(TxCustom::def())
                 .subcommand(TxTransfer::def())
+                .subcommand(TxIbcTransfer::def())
                 .subcommand(TxUpdateVp::def())
                 .subcommand(TxInitNft::def())
                 .subcommand(TxMintNft::def())
@@ -82,6 +84,8 @@ pub mod cmds {
             let matchmaker = SubCmd::parse(matches).map(Self::Matchmaker);
             let tx_custom = SubCmd::parse(matches).map(Self::TxCustom);
             let tx_transfer = SubCmd::parse(matches).map(Self::TxTransfer);
+            let tx_ibc_transfer =
+                SubCmd::parse(matches).map(Self::TxIbcTransfer);
             let tx_update_vp = SubCmd::parse(matches).map(Self::TxUpdateVp);
             let tx_nft_create = SubCmd::parse(matches).map(Self::TxInitNft);
             let tx_nft_mint = SubCmd::parse(matches).map(Self::TxMintNft);
@@ -97,6 +101,7 @@ pub mod cmds {
                 .or(matchmaker)
                 .or(tx_custom)
                 .or(tx_transfer)
+                .or(tx_ibc_transfer)
                 .or(tx_update_vp)
                 .or(tx_nft_create)
                 .or(tx_nft_mint)
@@ -170,6 +175,7 @@ pub mod cmds {
                 // Simple transactions
                 .subcommand(TxCustom::def().display_order(1))
                 .subcommand(TxTransfer::def().display_order(1))
+                .subcommand(TxIbcTransfer::def().display_order(1))
                 .subcommand(TxUpdateVp::def().display_order(1))
                 .subcommand(TxInitAccount::def().display_order(1))
                 .subcommand(TxInitValidator::def().display_order(1))
@@ -205,6 +211,7 @@ pub mod cmds {
             use AnomaClientWithContext::*;
             let tx_custom = Self::parse_with_ctx(matches, TxCustom);
             let tx_transfer = Self::parse_with_ctx(matches, TxTransfer);
+            let tx_ibc_transfer = Self::parse_with_ctx(matches, TxIbcTransfer);
             let tx_update_vp = Self::parse_with_ctx(matches, TxUpdateVp);
             let tx_init_account = Self::parse_with_ctx(matches, TxInitAccount);
             let tx_init_validator =
@@ -236,6 +243,7 @@ pub mod cmds {
             let utils = SubCmd::parse(matches).map(Self::WithoutContext);
             tx_custom
                 .or(tx_transfer)
+                .or(tx_ibc_transfer)
                 .or(tx_update_vp)
                 .or(tx_init_account)
                 .or(tx_init_validator)
@@ -296,6 +304,7 @@ pub mod cmds {
         // Ledger cmds
         TxCustom(TxCustom),
         TxTransfer(TxTransfer),
+        TxIbcTransfer(TxIbcTransfer),
         QueryResult(QueryResult),
         TxUpdateVp(TxUpdateVp),
         TxInitAccount(TxInitAccount),
@@ -891,6 +900,25 @@ pub mod cmds {
     }
 
     #[derive(Clone, Debug)]
+    pub struct TxIbcTransfer(pub args::TxIbcTransfer);
+
+    impl SubCmd for TxIbcTransfer {
+        const CMD: &'static str = "ibc-transfer";
+
+        fn parse(matches: &ArgMatches) -> Option<Self> {
+            matches.subcommand_matches(Self::CMD).map(|matches| {
+                TxIbcTransfer(args::TxIbcTransfer::parse(matches))
+            })
+        }
+
+        fn def() -> App {
+            App::new(Self::CMD)
+                .about("Send a signed IBC transfer transaction.")
+                .add_args::<args::TxIbcTransfer>()
+        }
+    }
+
+    #[derive(Clone, Debug)]
     pub struct TxUpdateVp(pub args::TxUpdateVp);
 
     impl SubCmd for TxUpdateVp {
@@ -1362,6 +1390,7 @@ pub mod args {
     use std::path::PathBuf;
     use std::str::FromStr;
 
+    use anoma::ibc::core::ics24_host::identifier::{ChannelId, PortId};
     use anoma::types::address::Address;
     use anoma::types::chain::{ChainId, ChainIdPrefix};
     use anoma::types::governance::ProposalVote;
@@ -1404,6 +1433,7 @@ pub mod args {
     const CHAIN_ID: Arg<ChainId> = arg("chain-id");
     const CHAIN_ID_OPT: ArgOpt<ChainId> = CHAIN_ID.opt();
     const CHAIN_ID_PREFIX: Arg<ChainIdPrefix> = arg("chain-prefix");
+    const CHANNEL_ID: Arg<ChannelId> = arg("channel-id");
     const CODE_PATH: Arg<PathBuf> = arg("code-path");
     const CODE_PATH_OPT: ArgOpt<PathBuf> = CODE_PATH.opt();
     const CONSENSUS_TIMEOUT_COMMIT: ArgDefault<Timeout> = arg_default(
@@ -1451,6 +1481,10 @@ pub mod args {
     const NODE: Arg<String> = arg("node");
     const NFT_ADDRESS: Arg<Address> = arg("nft-address");
     const OWNER: ArgOpt<WalletAddress> = arg_opt("owner");
+    const PORT_ID: ArgDefault<PortId> = arg_default(
+        "port-id",
+        DefaultFn(|| PortId::from_str("transfer").unwrap()),
+    );
     const PROPOSAL_OFFLINE: ArgFlag = flag("offline");
     const PROTOCOL_KEY: ArgOpt<WalletPublicKey> = arg_opt("protocol-key");
     const PRE_GENESIS_PATH: ArgOpt<PathBuf> = arg_opt("pre-genesis-path");
@@ -1460,6 +1494,7 @@ pub mod args {
     const PROPOSAL_VOTE: Arg<ProposalVote> = arg("vote");
     const RAW_ADDRESS: Arg<Address> = arg("address");
     const RAW_PUBLIC_KEY_OPT: ArgOpt<common::PublicKey> = arg_opt("public-key");
+    const RECEIVER: Arg<String> = arg("receiver");
     const REWARDS_CODE_PATH: ArgOpt<PathBuf> = arg_opt("rewards-code-path");
     const REWARDS_KEY: ArgOpt<WalletPublicKey> = arg_opt("rewards-key");
     const RPC_SOCKET_ADDR: ArgOpt<SocketAddr> = arg_opt("rpc");
@@ -1643,6 +1678,61 @@ pub mod args {
                 .arg(TARGET.def().about("The target account address."))
                 .arg(TOKEN.def().about("The transfer token."))
                 .arg(AMOUNT.def().about("The amount to transfer in decimal."))
+        }
+    }
+
+    /// IBC transfer transaction arguments
+    #[derive(Clone, Debug)]
+    pub struct TxIbcTransfer {
+        /// Common tx arguments
+        pub tx: Tx,
+        /// Transfer source address
+        pub source: WalletAddress,
+        /// Transfer target address
+        pub receiver: String,
+        /// Transferred token address
+        pub token: WalletAddress,
+        /// Transferred token amount
+        pub amount: token::Amount,
+        /// Port ID
+        pub port_id: PortId,
+        /// Channel ID
+        pub channel_id: ChannelId,
+    }
+
+    impl Args for TxIbcTransfer {
+        fn parse(matches: &ArgMatches) -> Self {
+            let tx = Tx::parse(matches);
+            let source = SOURCE.parse(matches);
+            let receiver = RECEIVER.parse(matches);
+            let token = TOKEN.parse(matches);
+            let amount = AMOUNT.parse(matches);
+            let port_id = PORT_ID.parse(matches);
+            let channel_id = CHANNEL_ID.parse(matches);
+            Self {
+                tx,
+                source,
+                receiver,
+                token,
+                amount,
+                port_id,
+                channel_id,
+            }
+        }
+
+        fn def(app: App) -> App {
+            app.add_args::<Tx>()
+                .arg(SOURCE.def().about(
+                    "The source account address. The source's key is used to \
+                     produce the signature.",
+                ))
+                .arg(RECEIVER.def().about(
+                    "The receiver address on the destination chain as string.",
+                ))
+                .arg(TOKEN.def().about("The transfer token."))
+                .arg(AMOUNT.def().about("The amount to transfer in decimal."))
+                .arg(PORT_ID.def().about("The port ID."))
+                .arg(CHANNEL_ID.def().about("The channel ID."))
         }
     }
 

@@ -507,15 +507,15 @@ where
     pub fn get_existence_proof(
         &self,
         key: &Key,
-        value: Vec<u8>,
         height: BlockHeight,
     ) -> Result<Proof> {
         if height >= self.get_block_height().0 {
-            Ok(self.block.tree.get_existence_proof(key, value)?)
+            Ok(self.block.tree.get_existence_proof(key)?)
         } else {
             match self.db.read_merkle_tree_stores(height)? {
-                Some(stores) => Ok(MerkleTree::<H>::new(stores)
-                    .get_existence_proof(key, value)?),
+                Some(stores) => {
+                    Ok(MerkleTree::<H>::new(stores).get_existence_proof(key)?)
+                }
                 None => Err(Error::NoMerkleTree { height }),
             }
         }

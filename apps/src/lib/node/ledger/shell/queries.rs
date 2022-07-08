@@ -116,11 +116,7 @@ where
         match self.storage.read_with_height(key, height) {
             Ok((Some(value), _gas)) => {
                 let proof_ops = if is_proven {
-                    match self.storage.get_existence_proof(
-                        key,
-                        value.clone(),
-                        height,
-                    ) {
+                    match self.storage.get_existence_proof(key, height) {
                         Ok(proof) => Some(proof.into()),
                         Err(err) => {
                             return response::Query {
@@ -210,12 +206,9 @@ where
                 Ok(values) => {
                     let proof_ops = if is_proven {
                         let mut ops = vec![];
-                        for PrefixValue { key, value } in &values {
-                            match self.storage.get_existence_proof(
-                                key,
-                                value.clone(),
-                                height,
-                            ) {
+                        for PrefixValue { key, value: _ } in &values {
+                            match self.storage.get_existence_proof(key, height)
+                            {
                                 Ok(p) => {
                                     let mut cur_ops: Vec<ProofOp> = p
                                         .ops

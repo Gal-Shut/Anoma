@@ -2,6 +2,12 @@ use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fs::File;
 
+use anoma::ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use anoma::ibc::signer::Signer;
+use anoma::ibc::timestamp::Timestamp as IbcTimestamp;
+use anoma::ibc::tx_msg::Msg;
+use anoma::ibc::Height as IbcHeight;
+use anoma::ibc_proto::cosmos::base::v1beta1::Coin;
 use anoma::ledger::governance::storage as gov_storage;
 use anoma::ledger::pos::{BondId, Bonds, Unbonds};
 use anoma::proto::Tx;
@@ -63,6 +69,7 @@ const TX_INIT_PROPOSAL: &str = "tx_init_proposal.wasm";
 const TX_VOTE_PROPOSAL: &str = "tx_vote_proposal.wasm";
 const TX_UPDATE_VP_WASM: &str = "tx_update_vp.wasm";
 const TX_TRANSFER_WASM: &str = "tx_transfer.wasm";
+const TX_IBC_WASM: &str = "tx_ibc.wasm";
 const TX_INIT_NFT: &str = "tx_init_nft.wasm";
 const TX_MINT_NFT: &str = "tx_mint_nft.wasm";
 const VP_USER_WASM: &str = "vp_user.wasm";
@@ -440,6 +447,87 @@ pub async fn submit_transfer(ctx: Context, args: args::TxTransfer) {
     tracing::debug!("Transfer data {:?}", transfer);
     let data = transfer
         .try_to_vec()
+        .expect("Encoding tx data shouldn't fail");
+
+    let tx = Tx::new(tx_code, Some(data));
+    process_tx(ctx, &args.tx, tx, Some(&args.source)).await;
+}
+
+pub async fn submit_ibc_transfer(ctx: Context, args: args::TxIbcTransfer) {
+    let source = ctx.get(&args.source);
+    // Check that the source address exists on chain
+    let source_exists =
+        rpc::known_address(&source, args.tx.ledger_address.clone()).await;
+    if !source_exists {
+        eprintln!("The source address {} doesn't exist on chain.", source);
+        if !args.tx.force {
+            safe_exit(1)
+        }
+    }
+
+    // We cannot check the receiver
+
+    let token = ctx.get(&args.token);
+    // Check that the token address exists on chain
+    let token_exists =
+        rpc::known_address(&token, args.tx.ledger_address.clone()).await;
+    if !token_exists {
+        eprintln!("The token address {} doesn't exist on chain.", token);
+        if !args.tx.force {
+            safe_exit(1)
+        }
+    }
+    // Check source balance
+    let balance_key = token::balance_key(&token, &source);
+    let client = HttpClient::new(args.tx.ledger_address.clone()).unwrap();
+    match rpc::query_storage_value::<token::Amount>(&client, &balance_key).await
+    {
+        Some(balance) => {
+            if balance < args.amount {
+                eprintln!(
+                    "The balance of the source {} of token {} is lower than \
+                     the amount to be transferred. Amount to transfer is {} \
+                     and the balance is {}.",
+                    source, token, args.amount, balance
+                );
+                if !args.tx.force {
+                    safe_exit(1)
+                }
+            }
+        }
+        None => {
+            eprintln!(
+                "No balance found for the source {} of token {}",
+                source, token
+            );
+            if !args.tx.force {
+                safe_exit(1)
+            }
+        }
+    }
+    let status = client.status().await.unwrap();
+    let latest_height: u64 = status.sync_info.latest_block_height.into();
+
+    let tx_code = ctx.read_wasm(TX_IBC_WASM);
+
+    let token = Some(Coin {
+        denom: token.to_string(),
+        amount: args.amount.to_string(),
+    });
+    let msg = MsgTransfer {
+        source_port: args.port_id,
+        source_channel: args.channel_id,
+        token,
+        sender: Signer::new(source.to_string()),
+        receiver: Signer::new(args.receiver),
+        // TODO timeout isn't supported for now
+        timeout_height: IbcHeight::new(0, latest_height + 1000),
+        timeout_timestamp: IbcTimestamp::none(),
+    };
+    tracing::debug!("IBC transfer message {:?}", msg);
+    let any_msg = msg.to_any();
+    let mut data = vec![];
+    prost::Message::encode(&any_msg, &mut data)
         .expect("Encoding tx data shouldn't fail");
 
     let tx = Tx::new(tx_code, Some(data));

@@ -5,11 +5,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use ics23::commitment_proof::Proof as Ics23Proof;
-use ics23::{
-    CommitmentProof, ExistenceProof, HashOp, LeafOp, LengthOp,
-    NonExistenceProof, ProofSpec,
-};
+use ics23::{CommitmentProof, ProofSpec};
 use prost::Message;
 use sha2::{Digest, Sha256};
 use sparse_merkle_tree::default_store::DefaultStore;
@@ -238,30 +234,13 @@ impl<H: StorageHasher + Default> MerkleTree<H> {
     }
 
     /// Get the existence proof
-    pub fn get_existence_proof(
-        &self,
-        key: &Key,
-        value: Vec<u8>,
-    ) -> Result<Proof> {
+    pub fn get_existence_proof(&self, key: &Key) -> Result<Proof> {
         let (store_type, sub_key) = StoreType::sub_key(key)?;
         let subtree = self.tree(&store_type);
 
         // Get a proof of the sub tree
         let hashed_sub_key = H::hash(&sub_key.to_string());
-        let cp = subtree.membership_proof(&hashed_sub_key)?;
-        // Replace the values and the leaf op for the verification
-        let sub_proof = match cp.proof.expect("The proof should exist") {
-            Ics23Proof::Exist(ep) => CommitmentProof {
-                proof: Some(Ics23Proof::Exist(ExistenceProof {
-                    key: sub_key.to_string().as_bytes().to_vec(),
-                    value,
-                    leaf: Some(self.leaf_spec()),
-                    ..ep
-                })),
-            },
-            // the proof should have an ExistenceProof
-            _ => unreachable!(),
-        };
+        let sub_proof = subtree.membership_proof(&hashed_sub_key)?;
         self.get_proof(key, sub_proof)
     }
 
@@ -272,18 +251,7 @@ impl<H: StorageHasher + Default> MerkleTree<H> {
 
         // Get a proof of the sub tree
         let hashed_sub_key = H::hash(&sub_key.to_string());
-        let cp = subtree.non_membership_proof(&hashed_sub_key)?;
-        // Replace the key with the non-hashed key for the verification
-        let sub_proof = match cp.proof.expect("The proof should exist") {
-            Ics23Proof::Nonexist(nep) => CommitmentProof {
-                proof: Some(Ics23Proof::Nonexist(NonExistenceProof {
-                    key: sub_key.to_string().as_bytes().to_vec(),
-                    ..nep
-                })),
-            },
-            // the proof should have a NonExistenceProof
-            _ => unreachable!(),
-        };
+        let sub_proof = subtree.non_membership_proof(&hashed_sub_key)?;
         self.get_proof(key, sub_proof)
     }
 
@@ -307,19 +275,7 @@ impl<H: StorageHasher + Default> MerkleTree<H> {
         // exist
         let (store_type, _) = StoreType::sub_key(key)?;
         let base_key = store_type.to_string();
-        let cp = self.base.membership_proof(&H::hash(&base_key))?;
-        // Replace the values and the leaf op for the verification
-        let base_proof = match cp.proof.expect("The proof should exist") {
-            Ics23Proof::Exist(ep) => CommitmentProof {
-                proof: Some(Ics23Proof::Exist(ExistenceProof {
-                    key: base_key.as_bytes().to_vec(),
-                    leaf: Some(self.base_leaf_spec()),
-                    ..ep
-                })),
-            },
-            // the proof should have an ExistenceProof
-            _ => unreachable!(),
-        };
+        let base_proof = self.base.membership_proof(&H::hash(&base_key))?;
 
         let mut data = vec![];
         base_proof
@@ -340,40 +296,9 @@ impl<H: StorageHasher + Default> MerkleTree<H> {
     /// Get the proof specs
     pub fn proof_specs(&self) -> Vec<ProofSpec> {
         let spec = sparse_merkle_tree::proof_ics23::get_spec(H::hash_op());
-        let sub_tree_spec = ProofSpec {
-            leaf_spec: Some(self.leaf_spec()),
-            ..spec.clone()
-        };
-        let base_tree_spec = ProofSpec {
-            leaf_spec: Some(self.base_leaf_spec()),
-            ..spec
-        };
+        let sub_tree_spec = spec.clone();
+        let base_tree_spec = spec;
         vec![sub_tree_spec, base_tree_spec]
-    }
-
-    /// Get the leaf spec for the base tree. The key is stored after hashing,
-    /// but the stored value is the subtree's root without hashing.
-    fn base_leaf_spec(&self) -> LeafOp {
-        LeafOp {
-            hash: H::hash_op().into(),
-            prehash_key: H::hash_op().into(),
-            prehash_value: HashOp::NoHash.into(),
-            length: LengthOp::NoPrefix.into(),
-            prefix: H256::zero().as_slice().to_vec(),
-        }
-    }
-
-    /// Get the leaf spec for the subtree. Non-hashed values are used for the
-    /// verification with this spec because a subtree stores the key-value pairs
-    /// after hashing.
-    fn leaf_spec(&self) -> LeafOp {
-        LeafOp {
-            hash: H::hash_op().into(),
-            prehash_key: H::hash_op().into(),
-            prehash_value: H::hash_op().into(),
-            length: LengthOp::NoPrefix.into(),
-            prefix: H256::zero().as_slice().to_vec(),
-        }
     }
 }
 
@@ -514,6 +439,8 @@ impl From<SmtError> for Error {
 
 #[cfg(test)]
 mod test {
+    use ics23::commitment_proof::Proof as Ics23Proof;
+
     use super::*;
     use crate::types::storage::KeySeg;
 
@@ -586,8 +513,7 @@ mod test {
         tree.update(&pos_key, pos_val).unwrap();
 
         let specs = tree.proof_specs();
-        let proof =
-            tree.get_existence_proof(&ibc_key, ibc_val.clone()).unwrap();
+        let proof = tree.get_existence_proof(&ibc_key).unwrap();
         let (store_type, sub_key) = StoreType::sub_key(&ibc_key).unwrap();
         let paths = vec![sub_key.to_string(), store_type.to_string()];
         let mut sub_root = ibc_val.clone();
@@ -617,5 +543,76 @@ mod test {
         }
         // Check the base root
         assert_eq!(sub_root, tree.root().0);
+    }
+
+    #[test]
+    fn test_non_existence_proof() {
+        let mut tree = MerkleTree::<Sha256Hasher>::default();
+
+        let key_prefix: Key =
+            Address::Internal(InternalAddress::Ibc).to_db_key().into();
+        let ibc_key = key_prefix.push(&"test".to_string()).unwrap();
+        let key_prefix: Key =
+            Address::Internal(InternalAddress::PoS).to_db_key().into();
+        let pos_key = key_prefix.push(&"test".to_string()).unwrap();
+        let pos_key2 = key_prefix.push(&"test2".to_string()).unwrap();
+
+        let ibc_val = [1u8; 8].to_vec();
+        tree.update(&ibc_key, ibc_val).unwrap();
+        let pos_val = [2u8; 8].to_vec();
+        tree.update(&pos_key, pos_val).unwrap();
+        let pos_val2 = [3u8; 8].to_vec();
+        // to prevent the subtree from being empty after deletion
+        tree.update(&pos_key2, pos_val2).unwrap();
+
+        // Delete the pos key and verify non-existence proof for it
+        tree.delete(&pos_key).unwrap();
+
+        let specs = tree.proof_specs();
+        let nep = tree.get_non_existence_proof(&pos_key).unwrap();
+        let subtree_nep = nep.ops.get(0).unwrap();
+        let nep_commitment_proof =
+            CommitmentProof::decode(&*subtree_nep.data).unwrap();
+        let non_existence_proof =
+            match nep_commitment_proof.clone().proof.unwrap() {
+                Ics23Proof::Nonexist(nep) => nep,
+                _ => unreachable!(),
+            };
+        let subtree_root = if let Some(left) = &non_existence_proof.left {
+            ics23::calculate_existence_root(left).unwrap()
+        } else if let Some(right) = &non_existence_proof.right {
+            ics23::calculate_existence_root(right).unwrap()
+        } else {
+            unreachable!()
+        };
+        let (store_type, sub_key) = StoreType::sub_key(&pos_key).unwrap();
+
+        let subtree_spec = specs.get(0).unwrap();
+        let nep_verification_res = ics23::verify_non_membership(
+            &nep_commitment_proof,
+            subtree_spec,
+            &subtree_root,
+            sub_key.to_string().as_bytes(),
+        );
+        assert!(nep_verification_res);
+
+        let basetree_ep = nep.ops.get(1).unwrap();
+        let basetree_ep_commitment_proof =
+            CommitmentProof::decode(&*basetree_ep.data).unwrap();
+        let basetree_ics23_ep =
+            match basetree_ep_commitment_proof.clone().proof.unwrap() {
+                Ics23Proof::Exist(ep) => ep,
+                _ => unreachable!(),
+            };
+        let basetree_root =
+            ics23::calculate_existence_root(&basetree_ics23_ep).unwrap();
+        let basetree_verification_res = ics23::verify_membership(
+            &basetree_ep_commitment_proof,
+            specs.get(1).unwrap(),
+            &basetree_root,
+            store_type.to_string().as_bytes(),
+            &subtree_root,
+        );
+        assert!(basetree_verification_res);
     }
 }
