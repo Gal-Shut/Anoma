@@ -162,6 +162,14 @@ impl super::SecretKey for SecretKey {
             Err(ParseSecretKeyError::MismatchedScheme)
         }
     }
+
+    fn get_scheme_type(&self) -> SchemeType {
+        match self {
+            SecretKey::Ed25519(_) => SchemeType::Ed25519,
+            SecretKey::Secp256k1(_) => SchemeType::Secp256k1,
+        }
+    }
+
 }
 
 impl RefTo<PublicKey> for SecretKey {

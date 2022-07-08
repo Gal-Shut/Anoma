@@ -241,6 +241,12 @@ pub trait SecretKey:
             Err(ParseSecretKeyError::MismatchedScheme)
         }
     }
+
+    /// Get the scheme type of the key
+    fn get_scheme_type(&self) -> SchemeType {
+        Self::TYPE
+    }
+
     /// Convert from self to another SecretKey type
     fn try_to_sk<SK: SecretKey>(&self) -> Result<SK, ParseSecretKeyError> {
         SK::try_from_sk(self)
