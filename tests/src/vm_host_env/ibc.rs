@@ -58,7 +58,6 @@ pub use anoma::ledger::ibc::storage::{
 use anoma::ledger::ibc::vp::{Ibc, IbcToken};
 use anoma::ledger::native_vp::{Ctx, NativeVp};
 use anoma::ledger::storage::mockdb::MockDB;
-use anoma::ledger::storage::testing::TestStorage;
 use anoma::ledger::storage::Sha256Hasher;
 use anoma::proto::Tx;
 use anoma::tendermint::account::Id as TmAccountId;
@@ -71,9 +70,9 @@ use anoma::tendermint::hash::{AppHash, Hash as TmHash};
 use anoma::tendermint::time::Time as TmTime;
 use anoma::tendermint_proto::Protobuf;
 use anoma::types::address::{self, Address, InternalAddress};
-use anoma::types::ibc::data::FungibleTokenPacketData;
+use anoma::types::ibc::data::{FungibleTokenPacketData, PacketAck};
 use anoma::types::ibc::IbcEvent;
-use anoma::types::storage::{BlockHeight, Key};
+use anoma::types::storage::{BlockHash, BlockHeight, Key};
 use anoma::types::time::Rfc3339String;
 use anoma::types::token::{self, Amount};
 use anoma::vm::{wasm, WasmCacheRwAccess};
@@ -184,12 +183,16 @@ pub fn init_ibc_vp_from_tx<'a>(
     tx_env: &'a TestTxEnv,
     tx: &'a Tx,
 ) -> (TestIbcVp<'a>, TempDir) {
-    let keys_changed = tx_env
+    let (verifiers, keys_changed) = tx_env
         .write_log
-        .verifiers_changed_keys(&BTreeSet::new())
-        .get(&Address::Internal(InternalAddress::Ibc))
-        .cloned()
-        .expect("no IBC address");
+        .verifiers_and_changed_keys(&tx_env.verifiers);
+    let addr = Address::Internal(InternalAddress::Ibc);
+    if !verifiers.contains(&addr) {
+        panic!(
+            "IBC address {} isn't part of the tx verifiers set: {:#?}",
+            addr, verifiers
+        );
+    }
     let (vp_wasm_cache, vp_cache_dir) =
         wasm::compilation_cache::common::testing::cache();
 
@@ -211,12 +214,16 @@ pub fn init_token_vp_from_tx<'a>(
     tx: &'a Tx,
     addr: &Address,
 ) -> (TestIbcTokenVp<'a>, TempDir) {
-    let keys_changed = tx_env
+    let (verifiers, keys_changed) = tx_env
         .write_log
-        .verifiers_changed_keys(&BTreeSet::new())
-        .get(addr)
-        .cloned()
-        .expect("no token address");
+        .verifiers_and_changed_keys(&tx_env.verifiers);
+    if !verifiers.contains(addr) {
+        panic!(
+            "The given token address {} isn't part of the tx verifiers set: \
+             {:#?}",
+            addr, verifiers
+        );
+    }
     let (vp_wasm_cache, vp_cache_dir) =
         wasm::compilation_cache::common::testing::cache();
 
@@ -238,11 +245,16 @@ pub fn init_token_vp_from_tx<'a>(
     )
 }
 
-/// Initialize the test storage
-pub fn init_storage(storage: &mut TestStorage) -> (Address, Address) {
-    init_genesis_storage(storage);
-    // block header to check timeout timestamp
-    storage.set_header(tm_dummy_header()).unwrap();
+/// Initialize the test storage. Requires initialized [`tx_host_env::ENV`].
+pub fn init_storage() -> (Address, Address) {
+    tx_host_env::with(|env| {
+        init_genesis_storage(&mut env.storage);
+        // block header to check timeout timestamp
+        env.storage.set_header(tm_dummy_header()).unwrap();
+        env.storage
+            .begin_block(BlockHash::default(), BlockHeight(1))
+            .unwrap();
+    });
 
     // initialize a token
     let code = std::fs::read(VP_ALWAYS_TRUE_WASM).expect("cannot load wasm");
@@ -330,6 +342,7 @@ pub fn prepare_opened_connection(
 
 pub fn prepare_opened_channel(
     conn_id: &ConnectionId,
+    is_ordered: bool,
 ) -> (PortId, ChannelId, HashMap<Key, Vec<u8>>) {
     let mut writes = HashMap::new();
 
@@ -343,11 +356,14 @@ pub fn prepare_opened_channel(
     writes.insert(key, bytes);
     // channel
     let channel_id = channel_id(0);
-    let port_channel_id = port_channel_id(port_id.clone(), channel_id.clone());
+    let port_channel_id = port_channel_id(port_id.clone(), channel_id);
     let key = channel_key(&port_channel_id);
     let msg = msg_channel_open_init(port_id.clone(), conn_id.clone());
     let mut channel = msg.channel;
     open_channel(&mut channel);
+    if !is_ordered {
+        channel.ordering = Order::Unordered;
+    }
     let bytes = channel.encode_vec().expect("encoding failed");
     writes.insert(key, bytes);
 
@@ -355,7 +371,7 @@ pub fn prepare_opened_channel(
 }
 
 pub fn msg_create_client() -> MsgCreateAnyClient {
-    let height = Height::new(1, 10);
+    let height = Height::new(0, 1);
     let header = MockHeader {
         height,
         timestamp: Timestamp::now(),
@@ -370,7 +386,7 @@ pub fn msg_create_client() -> MsgCreateAnyClient {
 }
 
 pub fn msg_update_client(client_id: ClientId) -> MsgUpdateAnyClient {
-    let height = Height::new(1, 11);
+    let height = Height::new(0, 2);
     let header = MockHeader {
         height,
         timestamp: Timestamp::now(),
@@ -411,7 +427,7 @@ pub fn msg_connection_open_init(client_id: ClientId) -> MsgConnectionOpenInit {
     MsgConnectionOpenInit {
         client_id,
         counterparty: dummy_connection_counterparty(),
-        version: ConnVersion::default(),
+        version: None,
         delay_period: Duration::new(100, 0),
         signer: Signer::new("test"),
     }
@@ -461,7 +477,7 @@ pub fn msg_connection_open_confirm(
 }
 
 fn dummy_proofs() -> Proofs {
-    let height = Height::new(1, 10);
+    let height = Height::new(0, 1);
     let consensus_proof =
         ConsensusProof::new(vec![0].try_into().unwrap(), height).unwrap();
     Proofs::new(
@@ -515,10 +531,9 @@ pub fn msg_channel_open_ack(
     MsgChannelOpenAck {
         port_id,
         channel_id,
-        counterparty_channel_id: dummy_channel_counterparty()
+        counterparty_channel_id: *dummy_channel_counterparty()
             .channel_id()
-            .unwrap()
-            .clone(),
+            .unwrap(),
         counterparty_version: ChanVersion::ics20(),
         proofs: dummy_proofs(),
         signer: Signer::new("test"),
@@ -577,9 +592,8 @@ fn dummy_channel(
 pub fn dummy_channel_counterparty() -> ChanCounterparty {
     let counterpart_port_id = PortId::from_str("counterpart_test_port")
         .expect("Creating a port ID failed");
-    let counterpart_channel_id =
-        ChannelId::from_str("counterpart_test_channel")
-            .expect("Creating a channel ID failed");
+    let counterpart_channel_id = ChannelId::from_str("channel-42")
+        .expect("Creating a channel ID failed");
     channel_counterparty(counterpart_port_id, counterpart_channel_id)
 }
 
@@ -626,7 +640,7 @@ pub fn msg_packet_recv(packet: Packet) -> MsgRecvPacket {
 pub fn msg_packet_ack(packet: Packet) -> MsgAcknowledgement {
     MsgAcknowledgement {
         packet,
-        acknowledgement: vec![0],
+        acknowledgement: PacketAck::result_success().encode_to_vec().into(),
         proofs: dummy_proofs(),
         signer: Signer::new("test"),
     }
@@ -643,7 +657,7 @@ pub fn received_packet(
     let timeout_timestamp =
         (Timestamp::now() + Duration::from_secs(100)).unwrap();
     let data = FungibleTokenPacketData {
-        denomination: token,
+        denom: token,
         amount: 100u64.to_string(),
         sender: address::testing::gen_established_address().to_string(),
         receiver: receiver.to_string(),
@@ -651,7 +665,7 @@ pub fn received_packet(
     Packet {
         sequence,
         source_port: counterparty.port_id().clone(),
-        source_channel: counterparty.channel_id().unwrap().clone(),
+        source_channel: *counterparty.channel_id().unwrap(),
         destination_port: port_id,
         destination_channel: channel_id,
         data: serde_json::to_vec(&data).unwrap(),

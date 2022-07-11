@@ -9,6 +9,8 @@
 //! To keep the temporary files created by a test, use env var
 //! `ANOMA_E2E_KEEP_TEMP=true`.
 
+use std::fs::OpenOptions;
+use std::path::PathBuf;
 use std::process::Command;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -19,6 +21,7 @@ use anoma_apps::config::genesis::genesis_config::{
 };
 use borsh::BorshSerialize;
 use color_eyre::eyre::Result;
+use serde_json::json;
 use setup::constants::*;
 
 use crate::e2e::helpers::{
@@ -165,6 +168,7 @@ fn run_ledger_load_state_and_reset() -> Result<()> {
 /// 4. Submit a custom tx
 /// 5. Submit a tx to initialize a new account
 /// 6. Query token balance
+/// 7. Query the raw bytes of a storage key
 #[test]
 fn ledger_txs_and_queries() -> Result<()> {
     let test = setup::network(|genesis| genesis, None)?;
@@ -305,6 +309,31 @@ fn ledger_txs_and_queries() -> Result<()> {
     for (query_args, expected) in &query_args_and_expected_response {
         let mut client = run!(test, Bin::Client, query_args, Some(40))?;
         client.exp_regex(expected)?;
+
+        client.assert_success();
+    }
+    let christel = find_address(&test, CHRISTEL)?;
+    // as setup in `genesis/e2e-tests-single-node.toml`
+    let christel_balance = token::Amount::whole(1000000);
+    let xan = find_address(&test, XAN)?;
+    let storage_key = token::balance_key(&xan, &christel).to_string();
+    let query_args_and_expected_response = vec![
+        // 7. Query storage key and get hex-encoded raw bytes
+        (
+            vec![
+                "query-bytes",
+                "--storage-key",
+                &storage_key,
+                "--ledger-address",
+                &validator_one_rpc,
+            ],
+            // expect hex encoded of borsh encoded bytes
+            hex::encode(christel_balance.try_to_vec().unwrap()),
+        ),
+    ];
+    for (query_args, expected) in &query_args_and_expected_response {
+        let mut client = run!(test, Bin::Client, query_args, Some(40))?;
+        client.exp_string(expected)?;
 
         client.assert_success();
     }
@@ -1279,4 +1308,201 @@ fn ledger_many_txs_in_a_block() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// In this test we:
+/// 1. Run the ledger node
+/// 2. Submit a valid proposal
+/// 3. Query the proposal
+/// 4. Query token balance (submitted funds)
+/// 5. Query governance address balance
+/// 6. Submit an invalid proposal
+/// 7. Check invalid proposal was not accepted
+/// 8. Query token balance (funds shall not be submitted)
+#[test]
+fn proposal_submission() -> Result<()> {
+    let test = setup::network(|genesis| genesis, None)?;
+
+    // 1. Run the ledger node
+    let mut ledger =
+        run_as!(test, Who::Validator(0), Bin::Node, &["ledger"], Some(40))?;
+
+    ledger.exp_string("Anoma ledger node started")?;
+    if !cfg!(feature = "ABCI") {
+        ledger.exp_string("started node")?;
+    } else {
+        ledger.exp_string("Started node")?;
+    }
+
+    // 2. Submit valid proposal
+    let valid_proposal_json_path =
+        test.base_dir.path().join("valid_proposal.json");
+    let albert = find_address(&test, ALBERT)?;
+    let valid_proposal_json = json!(
+        {
+            "content": {
+                "title": "TheTitle",
+                "authors": "test@test.com",
+                "discussions-to": "www.github.com/anoma/aip/1",
+                "created": "2022-03-10T08:54:37Z",
+                "license": "MIT",
+                "abstract": "Ut convallis eleifend orci vel venenatis. Duis vulputate metus in lacus sollicitudin vestibulum. Suspendisse vel velit ac est consectetur feugiat nec ac urna. Ut faucibus ex nec dictum fermentum. Morbi aliquet purus at sollicitudin ultrices. Quisque viverra varius cursus. Praesent sed mauris gravida, pharetra turpis non, gravida eros. Nullam sed ex justo. Ut at placerat ipsum, sit amet rhoncus libero. Sed blandit non purus non suscipit. Phasellus sed quam nec augue bibendum bibendum ut vitae urna. Sed odio diam, ornare nec sapien eget, congue viverra enim.",
+                "motivation": "Ut convallis eleifend orci vel venenatis. Duis vulputate metus in lacus sollicitudin vestibulum. Suspendisse vel velit ac est consectetur feugiat nec ac urna. Ut faucibus ex nec dictum fermentum. Morbi aliquet purus at sollicitudin ultrices.",
+                "details": "Ut convallis eleifend orci vel venenatis. Duis vulputate metus in lacus sollicitudin vestibulum. Suspendisse vel velit ac est consectetur feugiat nec ac urna. Ut faucibus ex nec dictum fermentum. Morbi aliquet purus at sollicitudin ultrices. Quisque viverra varius cursus. Praesent sed mauris gravida, pharetra turpis non, gravida eros.",
+                "requires": "2"
+            },
+            "author": albert,
+            "voting_start_epoch": 9999,
+            "voting_end_epoch": 10002,
+            "grace_epoch": 10009
+        }
+    );
+    generate_proposal_json(
+        valid_proposal_json_path.clone(),
+        valid_proposal_json,
+    );
+
+    let validator_one_rpc = get_actor_rpc(&test, &Who::Validator(0));
+
+    let submit_proposal_args = vec![
+        "init-proposal",
+        "--data-path",
+        valid_proposal_json_path.to_str().unwrap(),
+        "--ledger-address",
+        &validator_one_rpc,
+    ];
+
+    let mut client = run!(test, Bin::Client, submit_proposal_args, Some(15))?;
+    client.exp_string("Transaction is valid.")?;
+    client.assert_success();
+
+    // 3. Query the proposal
+
+    let proposal_query_args = vec![
+        "query-proposal",
+        "--proposal-id",
+        "0",
+        "--ledger-address",
+        &validator_one_rpc,
+    ];
+
+    let mut client = run!(test, Bin::Client, proposal_query_args, Some(15))?;
+    client.exp_string("Proposal: 0")?;
+    client.assert_success();
+
+    // 4. Query token balance proposal author (submitted funds)
+    let query_balance_args = vec![
+        "balance",
+        "--owner",
+        ALBERT,
+        "--token",
+        XAN,
+        "--ledger-address",
+        &validator_one_rpc,
+    ];
+
+    let mut client = run!(test, Bin::Client, query_balance_args, Some(15))?;
+    client.exp_string("XAN: 999500")?;
+    client.assert_success();
+
+    // 5. Query token balance governance
+    let query_balance_args = vec![
+        "balance",
+        "--owner",
+        GOVERNANCE_ADDRESS,
+        "--token",
+        XAN,
+        "--ledger-address",
+        &validator_one_rpc,
+    ];
+
+    let mut client = run!(test, Bin::Client, query_balance_args, Some(15))?;
+    client.exp_string("XAN: 500")?;
+    client.assert_success();
+
+    // 6. Submit an invalid proposal
+    // proposal is invalid due to voting_end_epoch - voting_start_epoch < 3
+    let invalid_proposal_json_path =
+        test.base_dir.path().join("invalid_proposal.json");
+    let albert = find_address(&test, ALBERT)?;
+    let invalid_proposal_json = json!(
+        {
+            "content": {
+                "title": "TheTitle",
+                "authors": "test@test.com",
+                "discussions-to": "www.github.com/anoma/aip/1",
+                "created": "2022-03-10T08:54:37Z",
+                "license": "MIT",
+                "abstract": "Ut convallis eleifend orci vel venenatis. Duis vulputate metus in lacus sollicitudin vestibulum. Suspendisse vel velit ac est consectetur feugiat nec ac urna. Ut faucibus ex nec dictum fermentum. Morbi aliquet purus at sollicitudin ultrices. Quisque viverra varius cursus. Praesent sed mauris gravida, pharetra turpis non, gravida eros. Nullam sed ex justo. Ut at placerat ipsum, sit amet rhoncus libero. Sed blandit non purus non suscipit. Phasellus sed quam nec augue bibendum bibendum ut vitae urna. Sed odio diam, ornare nec sapien eget, congue viverra enim.",
+                "motivation": "Ut convallis eleifend orci vel venenatis. Duis vulputate metus in lacus sollicitudin vestibulum. Suspendisse vel velit ac est consectetur feugiat nec ac urna. Ut faucibus ex nec dictum fermentum. Morbi aliquet purus at sollicitudin ultrices.",
+                "details": "Ut convallis eleifend orci vel venenatis. Duis vulputate metus in lacus sollicitudin vestibulum. Suspendisse vel velit ac est consectetur feugiat nec ac urna. Ut faucibus ex nec dictum fermentum. Morbi aliquet purus at sollicitudin ultrices. Quisque viverra varius cursus. Praesent sed mauris gravida, pharetra turpis non, gravida eros.",
+                "requires": "2"
+            },
+            "author": albert,
+            "voting_start_epoch": 9999,
+            "voting_end_epoch": 10000,
+            "grace_epoch": 10009
+        }
+    );
+    generate_proposal_json(
+        invalid_proposal_json_path.clone(),
+        invalid_proposal_json,
+    );
+
+    let validator_one_rpc = get_actor_rpc(&test, &Who::Validator(0));
+
+    let submit_proposal_args = vec![
+        "init-proposal",
+        "--data-path",
+        invalid_proposal_json_path.to_str().unwrap(),
+        "--ledger-address",
+        &validator_one_rpc,
+    ];
+
+    let mut client = run!(test, Bin::Client, submit_proposal_args, Some(15))?;
+    client.exp_string("Transaction is invalid.")?;
+    client.assert_success();
+
+    // 7. Check invalid proposal was not accepted
+    let proposal_query_args = vec![
+        "query-proposal",
+        "--proposal-id",
+        "1",
+        "--ledger-address",
+        &validator_one_rpc,
+    ];
+
+    let mut client = run!(test, Bin::Client, proposal_query_args, Some(15))?;
+    client.exp_string("No valid proposal was found with id 1")?;
+    client.assert_success();
+
+    // 8. Query token balance (funds shall not be submitted)
+    let query_balance_args = vec![
+        "balance",
+        "--owner",
+        ALBERT,
+        "--token",
+        XAN,
+        "--ledger-address",
+        &validator_one_rpc,
+    ];
+
+    let mut client = run!(test, Bin::Client, query_balance_args, Some(15))?;
+    client.exp_string("XAN: 999500")?;
+    client.assert_success();
+
+    Ok(())
+}
+
+fn generate_proposal_json(
+    proposal_path: PathBuf,
+    proposal_content: serde_json::Value,
+) {
+    let intent_writer = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(proposal_path)
+        .unwrap();
+    serde_json::to_writer(intent_writer, &proposal_content).unwrap();
 }

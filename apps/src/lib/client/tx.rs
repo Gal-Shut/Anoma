@@ -2,12 +2,22 @@ use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fs::File;
 
+use anoma::ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use anoma::ibc::signer::Signer;
+use anoma::ibc::timestamp::Timestamp as IbcTimestamp;
+use anoma::ibc::tx_msg::Msg;
+use anoma::ibc::Height as IbcHeight;
+use anoma::ibc_proto::cosmos::base::v1beta1::Coin;
+use anoma::ledger::governance::storage as gov_storage;
 use anoma::ledger::pos::{BondId, Bonds, Unbonds};
 use anoma::proto::Tx;
-use anoma::types::address::Address;
+use anoma::types::address::{xan as m1t, Address};
+use anoma::types::governance::{OfflineProposal, Proposal};
 use anoma::types::key::*;
 use anoma::types::nft::{self, Nft, NftToken};
 use anoma::types::storage::Epoch;
+use anoma::types::token::Amount;
+use anoma::types::transaction::governance::InitProposalData;
 use anoma::types::transaction::nft::{CreateNft, MintNft};
 use anoma::types::transaction::{
     hash_tx, pos, Fee, InitAccount, InitValidator, UpdateVp, WrapperTx,
@@ -82,8 +92,10 @@ use anoma::types::address::masp;
 
 const TX_INIT_ACCOUNT_WASM: &str = "tx_init_account.wasm";
 const TX_INIT_VALIDATOR_WASM: &str = "tx_init_validator.wasm";
+const TX_INIT_PROPOSAL: &str = "tx_init_proposal.wasm";
 const TX_UPDATE_VP_WASM: &str = "tx_update_vp.wasm";
 const TX_TRANSFER_WASM: &str = "tx_transfer.wasm";
+const TX_IBC_WASM: &str = "tx_ibc.wasm";
 const TX_INIT_NFT: &str = "tx_init_nft.wasm";
 const TX_MINT_NFT: &str = "tx_mint_nft.wasm";
 const VP_USER_WASM: &str = "vp_user.wasm";
@@ -791,7 +803,8 @@ pub async fn submit_transfer(ctx: Context, args: args::TxTransfer) {
     // Check source balance
     let balance_key = token::balance_key(&token, &source);
     let client = HttpClient::new(args.tx.ledger_address.clone()).unwrap();
-    match rpc::query_storage_value::<token::Amount>(client, balance_key).await {
+    match rpc::query_storage_value::<token::Amount>(&client, &balance_key).await
+    {
         Some(balance) => {
             if balance < args.amount {
                 eprintln!(
@@ -843,6 +856,87 @@ pub async fn submit_transfer(ctx: Context, args: args::TxTransfer) {
     process_tx(ctx, &args.tx, tx, Some(&args.source)).await;
 }
 
+pub async fn submit_ibc_transfer(ctx: Context, args: args::TxIbcTransfer) {
+    let source = ctx.get(&args.source);
+    // Check that the source address exists on chain
+    let source_exists =
+        rpc::known_address(&source, args.tx.ledger_address.clone()).await;
+    if !source_exists {
+        eprintln!("The source address {} doesn't exist on chain.", source);
+        if !args.tx.force {
+            safe_exit(1)
+        }
+    }
+
+    // We cannot check the receiver
+
+    let token = ctx.get(&args.token);
+    // Check that the token address exists on chain
+    let token_exists =
+        rpc::known_address(&token, args.tx.ledger_address.clone()).await;
+    if !token_exists {
+        eprintln!("The token address {} doesn't exist on chain.", token);
+        if !args.tx.force {
+            safe_exit(1)
+        }
+    }
+    // Check source balance
+    let balance_key = token::balance_key(&token, &source);
+    let client = HttpClient::new(args.tx.ledger_address.clone()).unwrap();
+    match rpc::query_storage_value::<token::Amount>(&client, &balance_key).await
+    {
+        Some(balance) => {
+            if balance < args.amount {
+                eprintln!(
+                    "The balance of the source {} of token {} is lower than \
+                     the amount to be transferred. Amount to transfer is {} \
+                     and the balance is {}.",
+                    source, token, args.amount, balance
+                );
+                if !args.tx.force {
+                    safe_exit(1)
+                }
+            }
+        }
+        None => {
+            eprintln!(
+                "No balance found for the source {} of token {}",
+                source, token
+            );
+            if !args.tx.force {
+                safe_exit(1)
+            }
+        }
+    }
+    let status = client.status().await.unwrap();
+    let latest_height: u64 = status.sync_info.latest_block_height.into();
+
+    let tx_code = ctx.read_wasm(TX_IBC_WASM);
+
+    let token = Some(Coin {
+        denom: token.to_string(),
+        amount: args.amount.to_string(),
+    });
+    let msg = MsgTransfer {
+        source_port: args.port_id,
+        source_channel: args.channel_id,
+        token,
+        sender: Signer::new(source.to_string()),
+        receiver: Signer::new(args.receiver),
+        // TODO timeout isn't supported for now
+        timeout_height: IbcHeight::new(0, latest_height + 1000),
+        timeout_timestamp: IbcTimestamp::none(),
+    };
+    tracing::debug!("IBC transfer message {:?}", msg);
+    let any_msg = msg.to_any();
+    let mut data = vec![];
+    prost::Message::encode(&any_msg, &mut data)
+        .expect("Encoding tx data shouldn't fail");
+
+    let tx = Tx::new(tx_code, Some(data));
+    process_tx(ctx, &args.tx, tx, Some(&args.source)).await;
+}
+
 pub async fn submit_init_nft(ctx: Context, args: args::NftCreate) {
     let file = File::open(&args.nft_data).expect("File must exist.");
     let nft: Nft = serde_json::from_reader(file)
@@ -883,18 +977,16 @@ pub async fn submit_mint_nft(ctx: Context, args: args::NftMint) {
 
     let nft_creator_key = nft::get_creator_key(&args.nft_address);
     let client = HttpClient::new(args.tx.ledger_address.clone()).unwrap();
-    let nft_creator_address = match rpc::query_storage_value::<Address>(
-        client,
-        nft_creator_key,
-    )
-    .await
-    {
-        Some(addr) => addr,
-        None => {
-            eprintln!("No creator key found for {}", &args.nft_address);
-            safe_exit(1);
-        }
-    };
+    let nft_creator_address =
+        match rpc::query_storage_value::<Address>(&client, &nft_creator_key)
+            .await
+        {
+            Some(addr) => addr,
+            None => {
+                eprintln!("No creator key found for {}", &args.nft_address);
+                safe_exit(1);
+            }
+        };
 
     let signer = Some(WalletAddress::new(nft_creator_address.to_string()));
 
@@ -912,6 +1004,74 @@ pub async fn submit_mint_nft(ctx: Context, args: args::NftMint) {
 
     let tx = Tx::new(tx_code, Some(data));
     process_tx(ctx, &args.tx, tx, signer.as_ref()).await;
+}
+
+pub async fn submit_init_proposal(mut ctx: Context, args: args::InitProposal) {
+    let file = File::open(&args.proposal_data).expect("File must exist.");
+    let proposal: Proposal =
+        serde_json::from_reader(file).expect("JSON was not well-formatted");
+
+    let signer = WalletAddress::new(proposal.clone().author.to_string());
+    let tx_data: Result<InitProposalData, _> = proposal.clone().try_into();
+
+    let init_proposal_data = if let Ok(data) = tx_data {
+        data
+    } else {
+        eprintln!("Invalid data for init proposal transaction.");
+        safe_exit(1)
+    };
+
+    if args.offline {
+        let signer = ctx.get(&signer);
+        let signing_key = signing::find_keypair(
+            &mut ctx.wallet,
+            &signer,
+            args.tx.ledger_address.clone(),
+        )
+        .await;
+        let offline_proposal = OfflineProposal::new(proposal, &signing_key);
+        let proposal_filename = "proposal".to_string();
+        let out = File::create(&proposal_filename).unwrap();
+        match serde_json::to_writer_pretty(out, &offline_proposal) {
+            Ok(_) => {
+                println!("Proposal created: {}.", proposal_filename);
+            }
+            Err(e) => {
+                eprintln!("Error while creating proposal file: {}.", e);
+                safe_exit(1)
+            }
+        }
+    } else {
+        let client = HttpClient::new(args.tx.ledger_address.clone()).unwrap();
+
+        let min_proposal_funds_key = gov_storage::get_min_proposal_fund_key();
+        let min_proposal_funds: Amount =
+            rpc::query_storage_value(&client, &min_proposal_funds_key)
+                .await
+                .unwrap();
+        let balance = rpc::get_token_balance(&client, &m1t(), &proposal.author)
+            .await
+            .unwrap_or_default();
+        if balance < min_proposal_funds {
+            eprintln!(
+                "Address {} doesn't have enough funds.",
+                &proposal.author
+            );
+            safe_exit(1);
+        }
+
+        let data = init_proposal_data
+            .try_to_vec()
+            .expect("Encoding proposal data shouldn't fail");
+        let tx_code = ctx.read_wasm(TX_INIT_PROPOSAL);
+        let tx = Tx::new(tx_code, Some(data));
+
+        process_tx(ctx, &args.tx, tx, Some(&signer)).await;
+    }
+}
+
+pub async fn submit_vote_proposal(_ctx: Context, _args: args::VoteProposal) {
+    //
 }
 
 pub async fn submit_bond(ctx: Context, args: args::Bond) {
@@ -945,7 +1105,8 @@ pub async fn submit_bond(ctx: Context, args: args::Bond) {
     let bond_source = source.as_ref().unwrap_or(&validator);
     let balance_key = token::balance_key(&address::xan(), bond_source);
     let client = HttpClient::new(args.tx.ledger_address.clone()).unwrap();
-    match rpc::query_storage_value::<token::Amount>(client, balance_key).await {
+    match rpc::query_storage_value::<token::Amount>(&client, &balance_key).await
+    {
         Some(balance) => {
             if balance < args.amount {
                 eprintln!(
@@ -1005,8 +1166,7 @@ pub async fn submit_unbond(ctx: Context, args: args::Unbond) {
     };
     let bond_key = ledger::pos::bond_key(&bond_id);
     let client = HttpClient::new(args.tx.ledger_address.clone()).unwrap();
-    let bonds =
-        rpc::query_storage_value::<Bonds>(client.clone(), bond_key).await;
+    let bonds = rpc::query_storage_value::<Bonds>(&client, &bond_key).await;
     match bonds {
         Some(bonds) => {
             let mut bond_amount: token::Amount = 0.into();
@@ -1078,8 +1238,7 @@ pub async fn submit_withdraw(ctx: Context, args: args::Withdraw) {
     };
     let bond_key = ledger::pos::unbond_key(&bond_id);
     let client = HttpClient::new(args.tx.ledger_address.clone()).unwrap();
-    let unbonds =
-        rpc::query_storage_value::<Unbonds>(client.clone(), bond_key).await;
+    let unbonds = rpc::query_storage_value::<Unbonds>(&client, &bond_key).await;
     match unbonds {
         Some(unbonds) => {
             let mut unbonded_amount: token::Amount = 0.into();
