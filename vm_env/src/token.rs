@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use anoma::types::address::{masp, Address, InternalAddress};
 use anoma::types::storage::{Key, KeySeg};
 use anoma::types::token;
-use masp_primitives::transaction::Transaction;
+use anoma::types::masp_transaction::Transaction;
 
 /// Vp imports and functions.
 pub mod vp {

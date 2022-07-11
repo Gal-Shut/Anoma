@@ -48,9 +48,10 @@ use masp_primitives::merkle_tree::{
 use masp_primitives::note_encryption::*;
 use masp_primitives::primitives::{Diversifier, Note, ViewingKey};
 use masp_primitives::sapling::Node;
-use masp_primitives::transaction::builder::{self, *};
-use masp_primitives::transaction::components::{Amount, OutPoint, TxOut};
-use masp_primitives::transaction::Transaction;
+use masp_primitives::amount::Amount;
+use anoma::types::masp_transaction::builder::{self, *};
+use anoma::types::masp_transaction::components::{OutPoint, TxOut};
+use anoma::types::masp_transaction::Transaction;
 use masp_primitives::zip32::{ExtendedFullViewingKey, ExtendedSpendingKey};
 use masp_proofs::prover::LocalTxProver;
 use rand_core::{CryptoRng, OsRng, RngCore};

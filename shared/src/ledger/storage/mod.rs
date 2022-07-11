@@ -15,7 +15,7 @@ use masp_primitives::asset_type::AssetType;
 use masp_primitives::convert::AllowedConversion;
 use masp_primitives::merkle_tree::FrozenCommitmentTree;
 use masp_primitives::sapling::Node;
-use masp_primitives::transaction::components::Amount;
+use masp_primitives::amount::Amount;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
 };

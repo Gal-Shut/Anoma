@@ -6,7 +6,7 @@ use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
 use std::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-use masp_primitives::transaction::Transaction;
+use super::masp_transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

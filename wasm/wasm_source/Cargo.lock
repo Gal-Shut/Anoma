@@ -68,14 +68,17 @@ dependencies = [
  "bech32",
  "bellman",
  "bit-vec",
+ "blake2b_simd 1.0.0",
  "bls12_381",
  "borsh",
+ "byteorder",
  "chrono",
  "clru",
  "derivative",
  "ed25519-consensus",
  "ferveo-common",
  "ff",
+ "group",
  "hex",
  "ibc",
  "ibc-proto",
@@ -93,7 +96,9 @@ dependencies = [
  "rand",
  "rand_core 0.6.3",
  "rayon",
+ "ripemd160",
  "rust_decimal",
+ "secp256k1",
  "serde",
  "serde_json",
  "sha2 0.9.9",
@@ -111,6 +116,7 @@ dependencies = [
  "wasmer-engine-universal",
  "wasmer-vm",
  "wasmparser 0.83.0",
+ "zcash_primitives",
 ]
 
 [[package]]
@@ -1752,7 +1758,7 @@ dependencies = [
 [[package]]
 name = "masp_primitives"
 version = "0.5.0"
-source = "git+https://github.com/murisi/masp?branch=murisi/masp-incentive#6a814c8c1466c280f9ceec83bf6e180bafca06aa"
+source = "git+https://github.com/anoma/masp?branch=murisi/masp-incentive-stripped#f875b3a32833592146288862a2c4749aced6240a"
 dependencies = [
  "aes",
  "bip0039",
@@ -1783,7 +1789,7 @@ dependencies = [
 [[package]]
 name = "masp_proofs"
 version = "0.5.0"
-source = "git+https://github.com/murisi/masp?branch=murisi/masp-incentive#6a814c8c1466c280f9ceec83bf6e180bafca06aa"
+source = "git+https://github.com/anoma/masp?branch=murisi/masp-incentive-stripped#f875b3a32833592146288862a2c4749aced6240a"
 dependencies = [
  "bellman",
  "blake2b_simd 1.0.0",
@@ -2697,6 +2703,24 @@ name = "seahash"
 version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c107b6f4780854c8b126e228ea8869f4d7b71260f962fefb57b996b8959ba6b"
+
+[[package]]
+name = "secp256k1"
+version = "0.20.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97d03ceae636d0fed5bae6a7f4f664354c5f4fcedf6eef053fef17e49f837d0a"
+dependencies = [
+ "secp256k1-sys",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "957da2573cde917463ece3570eab4a0b3f19de6f1646cde62e6fd3868f566036"
+dependencies = [
+ "cc",
+]
 
 [[package]]
 name = "semver"

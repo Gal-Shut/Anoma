@@ -84,9 +84,11 @@ dependencies = [
  "bech32",
  "bellman",
  "bit-vec",
+ "blake2b_simd 1.0.0",
  "bls12_381",
  "borsh",
  "byte-unit",
+ "byteorder",
  "chrono",
  "clru",
  "derivative",
@@ -94,6 +96,7 @@ dependencies = [
  "ferveo",
  "ferveo-common",
  "ff",
+ "group",
  "group-threshold-cryptography",
  "hex",
  "ibc 0.12.0 (git+https://github.com/heliaxdev/ibc-rs?branch=murisi/jsfix)",
@@ -115,7 +118,9 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.3",
  "rayon",
+ "ripemd160",
  "rust_decimal",
+ "secp256k1",
  "serde 1.0.137",
  "serde_json",
  "sha2 0.9.9",
@@ -137,6 +142,7 @@ dependencies = [
  "wasmer-engine-universal",
  "wasmer-vm",
  "wasmparser 0.83.0",
+ "zcash_primitives",
 ]
 
 [[package]]
@@ -4118,7 +4124,7 @@ dependencies = [
 [[package]]
 name = "masp_primitives"
 version = "0.5.0"
-source = "git+https://github.com/murisi/masp?branch=murisi/masp-incentive#6a814c8c1466c280f9ceec83bf6e180bafca06aa"
+source = "git+https://github.com/anoma/masp?branch=murisi/masp-incentive-stripped#f875b3a32833592146288862a2c4749aced6240a"
 dependencies = [
  "aes",
  "bip0039",
@@ -4139,8 +4145,6 @@ dependencies = [
  "lazy_static 1.4.0",
  "rand 0.8.5",
  "rand_core 0.6.3",
- "ripemd160",
- "secp256k1",
  "serde 1.0.137",
  "sha2 0.9.9",
  "subtle 2.4.1",
@@ -4151,7 +4155,7 @@ dependencies = [
 [[package]]
 name = "masp_proofs"
 version = "0.5.0"
-source = "git+https://github.com/murisi/masp?branch=murisi/masp-incentive#6a814c8c1466c280f9ceec83bf6e180bafca06aa"
+source = "git+https://github.com/anoma/masp?branch=murisi/masp-incentive-stripped#f875b3a32833592146288862a2c4749aced6240a"
 dependencies = [
  "bellman",
  "blake2b_simd 1.0.0",

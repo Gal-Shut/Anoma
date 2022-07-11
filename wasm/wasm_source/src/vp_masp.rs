@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use anoma_vp_prelude::address::masp;
 use anoma_vp_prelude::*;
 use masp_primitives::asset_type::AssetType;
-use masp_primitives::transaction::components::Amount;
+use masp_primitives::amount::Amount;
 
 /// Convert Anoma amount and token type to MASP equivalents
 fn convert_amount(token: &Address, val: token::Amount) -> (AssetType, Amount) {

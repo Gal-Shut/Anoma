@@ -115,7 +115,7 @@ where
             let conv = (
                 addr,
                 epoch,
-                Into::<masp_primitives::transaction::components::Amount>::into(
+                Into::<masp_primitives::amount::Amount>::into(
                     conv.clone(),
                 ),
                 self.storage.conversion_state.tree.path(*pos),
